@@ -1,0 +1,6 @@
+# Prompt para Claude Code — SeshatSQL, Etapa 0
+Leia CLAUDE.md e os documentos da especificação consolidada v1.0-draft junto com o complemento v1.1. As decisões da rodada 7 prevalecem nos pontos alterados. Não confunda este complemento com uma baseline completa.
+Nesta sessão, faça apenas a preparação técnica descrita em docs/plano-etapa0.md. Primeiro inspecione o workspace disponível e informe exatamente o que existe. Não suponha que o repositório natanfiuza/seshatsql já existe ou que temos acesso.
+Produto SeshatSQL. Diretório de dados aprovado ~/.seshatsql/data/. MPL-2.0 escolhida para código próprio. Stack candidata aprovada para spikes, não homologada. Uma sessão de trabalho compartilhada; UI Windows 11 x64; MySQL; limites e exclusões conforme baseline.
+Não gere aplicação nem instale dependências ainda. Não crie/publique repositório, não conecte a bancos reais, não migre dados e não modifique configurações globais. Se acesso à rede ou comandos estiver indisponível, registre a limitação sem inventar versões ou resultados.
+Entregue: inventário do workspace/ambiente; matriz de versões e licenças com fontes; riscos/compatibilidades; plano exato do scaffold; comandos propostos; pontos que exigem aprovação. Distingua o que verificou do que apenas propôs. Pare para revisão ao final.

@@ -1,0 +1,7 @@
+id,cenario,esperado,status
+A18,Fechar com transacao aberta,Voltar ou rollback explicito ou commit explicitamente confirmado,NAO EXECUTADO
+A19,Fechar com consulta ativa,Confirmar cancelamento e aguardar estado antes do fluxo seguinte,NAO EXECUTADO
+A20,Operacao transacional falha no fechamento,Janela permanece aberta com estado e erro sem repeticao silenciosa,NAO EXECUTADO
+A21,Excluir perfil associado a abas,SQL preservado e referencia indisponivel com reassociacao,NAO EXECUTADO
+A22,Desinstalar e reinstalar,Dados do usuario preservados,NAO EXECUTADO
+A23,Resolver diretorio vigente,Usar home real mais .seshatsql/data sem apagar diretorio antigo,NAO EXECUTADO
