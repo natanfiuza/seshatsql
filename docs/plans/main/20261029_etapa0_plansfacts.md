@@ -1,5 +1,5 @@
 # Plano — Etapa 0 (preparação técnica controlada)
-Data: 2026-10-29 · Branch: `main` · Pasta: `main` (movido de `local` após a criação do repositório) · Status: **T00, T01 e S01 executados** — typecheck, lint, unitários, build, e2e e dev verificados com exit 0; lockfile **aguardando aprovação** (mudou com `typescript-eslint`); S01 medido contra MySQL 8.4.13 (ADR 0011 proposto); S02–S04 **não** iniciados
+Data: 2026-10-29 · Branch: `main` · Pasta: `main` (movido de `local` após a criação do repositório) · Status: **T00, T01, S01 e S02 executados** — typecheck, lint, unitários, build, e2e e dev verificados com exit 0; lockfile **aguardando aprovação** (mudou com `typescript-eslint`); S01 e S02 medidos contra MySQL 8.4.13 (ADR 0011 e 0012 propostos); S03–S04 **não** iniciados
 
 > **Nota:** o diretório virou repositório Git durante a sessão (commit `a44d40b`, branch `main`, remoto `natanfiuza/seshatsql`, sincronizado), sem ação do agente. Ver §0 do survey.
 
@@ -146,6 +146,21 @@ Fatos que mudam o desenho da camada de infraestrutura:
 5. Protocolo de erro é suficiente (`code`/`errno`/`sqlState`) para mapear mensagens, inclusive acesso negado (1045).
 
 **Não medido em S01** (fica para S02–S04): volume/memória/streaming, cancelamento, estado de transação após falha de rede, permissões. S01 cobre só a linha 8.4 — 9.7 LTS e 8.0.46 seguem sem ambiente.
+
+### S02 — volume, memória e contagem (executado em 2026-10-30)
+
+| Item | Resultado |
+|---|---|
+| Gerador | `spikes/s02-volume.mjs`, com `node --expose-gc` e GC forçado antes de cada medição |
+| Dados | `seshat_spike.vol` com 2.000.000 de linhas (130,7 MB em disco), geradas em 32 s e reaproveitadas nas reexecuções |
+| Evidência | `docs/spikes/20261029_s02-volume-evidence.md` |
+| Decisão proposta | `docs/adr/0012-limites-p04.md` — status **proposto** |
+
+Números centrais: 300.000 linhas bufferizadas = 45 MB (~157 B/linha); 2.000.000 em streaming drenam em 1,6 s com Δheap de 0,2 MB; reter 1.000 enquanto drena tudo custa 1,3 s; `COUNT(*)` exato custa 64–182 ms; linha larga retida custa 3.604 B (1,53× o payload); BLOB de 8 MB busca em ~25 ms; 70 MB excede `max_allowed_packet` (64 MB) e o servidor encerra a conexão.
+
+Conclusão de desenho: **o teto de memória deve ser por bytes retidos, não por linhas** — daí a proposta de 1.000 linhas **e** 64 MB por conjunto (ADR 0012).
+
+Não medido: cancelamento e `KILL QUERY` (S04); parser (S03); linhas 9.7 e 8.0.46.
 
 ## Bloqueios **[B]**
 
