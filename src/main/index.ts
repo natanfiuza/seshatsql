@@ -22,10 +22,10 @@ function createWindow(): void {
     window.show()
   })
 
-  // Nenhuma janela nova é aberta pelo conteúdo renderizado.
+  // Rendered content cannot open a new window.
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
 
-  // Navegação só pela URL carregada pelo processo principal.
+  // Navigation only to the URL loaded by the main process.
   window.webContents.on('will-navigate', (event) => {
     event.preventDefault()
   })

@@ -1,15 +1,15 @@
 /**
- * Spike S02 — volume, memória, streaming/drain, contagem e tamanho de célula.
+ * Spike S02 — volume, memory, streaming/drain, counting, and cell size.
  *
- * Uso (PowerShell):
+ * Usage (PowerShell):
  *   $env:SESHAT_DB_PASSWORD = '<senha>'
  *   node --expose-gc spikes/s02-volume.mjs docs/spikes/20261029_s02-volume-evidence.md
  *
- * Variáveis: SESHAT_DB_HOST/PORT/USER/PASSWORD e SESHAT_S02_ROWS (padrão 2000000).
+ * Variables: SESHAT_DB_HOST/PORT/USER/PASSWORD and SESHAT_S02_ROWS (default 2000000).
  *
- * A senha nunca é impressa nem gravada: vem só de variável de ambiente.
- * O schema de trabalho é `seshat_spike`, descartável, com dados sintéticos.
- * Nenhuma instrução com efeito é reexecutada; só DDL/INSERT/TRUNCATE sintéticos.
+ * The password is never printed or written: it comes only from an environment variable.
+ * The working schema is `seshat_spike`, disposable, with synthetic data.
+ * No statement with side effects is re-executed; only synthetic DDL/INSERT/TRUNCATE.
  */
 import mysql from 'mysql2'
 import { writeFileSync } from 'node:fs'
@@ -24,11 +24,11 @@ const SCHEMA = 'seshat_spike'
 const OUT = process.argv[2] ?? 'docs/spikes/20261029_s02-volume-evidence.md'
 
 if (!PASSWORD) {
-  console.error('SESHAT_DB_PASSWORD não definido')
+  console.error('SESHAT_DB_PASSWORD is not set')
   process.exit(1)
 }
 if (!global.gc) {
-  console.error('execute com --expose-gc para medir memória de forma honesta')
+  console.error('run with --expose-gc to measure memory honestly')
   process.exit(1)
 }
 
@@ -64,7 +64,7 @@ const conn = await mysql.createConnection({
 })
 
 conn.on('error', (error) => {
-  console.error(`conexão reportou erro: ${error.code ?? error.message}`)
+  console.error(`connection reported an error: ${error.code ?? error.message}`)
 })
 
 const withTimeout = (promise, msWait) =>
@@ -97,7 +97,7 @@ say(`- rss inicial: ${mb(base.rss)} · heapUsed: ${mb(base.heap)} · arrayBuffer
 say(`- Node: ${process.version} · heap máximo disponível: ${mb(getHeapStatistics().heap_size_limit)}`)
 say()
 
-// ---------------------------------------------------------------- 1. ambiente
+// ---------------------------------------------------------------- 1. environment
 {
   const { rows } = await q(
     'SELECT VERSION() AS versao, @@max_allowed_packet AS max_packet, @@innodb_buffer_pool_size AS pool'
@@ -111,7 +111,7 @@ say()
   say()
 }
 
-// ---------------------------------------------------------------- 2. geração
+// ---------------------------------------------------------------- 2. generation
 {
   say('## 2. Geração dos dados sintéticos')
   say()
@@ -171,7 +171,7 @@ say()
   }
 }
 
-// ------------------------------------------------------- 3. fetch em memória
+// ------------------------------------------------------- 3. in-memory fetch
 async function buffered(limit) {
   const before = memNow()
   const t0 = process.hrtime.bigint()
@@ -240,7 +240,7 @@ function samplePeak() {
   say()
 }
 
-// -------------------------------------------------- 5. parar cedo + destroy
+// -------------------------------------------------- 5. stop early + destroy
 {
   say('## 5. Parar o stream cedo (1.000 linhas) e destruir a conexão')
   say()
@@ -280,7 +280,7 @@ function samplePeak() {
   say()
 }
 
-// ------------------------------------- 6. parar cedo + drenar restante (reuso)
+// ------------------------------------- 6. stop early + drain the rest (reuse)
 {
   say('## 6. Parar de reter (1.000 linhas), drenar o resto e reutilizar a conexão')
   say()
@@ -318,7 +318,7 @@ function samplePeak() {
   say()
 }
 
-// ------------------------------------------------------ 7. custo da contagem
+// ------------------------------------------------------ 7. counting cost
 {
   say('## 7. Contagem de linhas (total exato, sem reescrever o SQL)')
   say()
@@ -343,7 +343,7 @@ function samplePeak() {
   say()
 }
 
-// ------------------------------------------------------- 8. célula muito grande
+// ------------------------------------------------------- 8. very large cell
 {
   say('## 8. BLOB grande (limite de célula)')
   say()
@@ -353,8 +353,8 @@ function samplePeak() {
   say('|---|---|---|---|')
   for (const sizeMb of [1, 8, 70]) {
     const buf = Buffer.alloc(sizeMb * 1024 * 1024, 0x61)
-    // 70 MB passa do max_allowed_packet (64 MB): usa conexão própria para não
-    // derrubar a conexão principal caso o servidor encerre o protocolo.
+    // 70 MB exceeds max_allowed_packet (64 MB): use its own connection so it does not
+    // take down the main connection if the server ends the protocol.
     const probe =
       sizeMb > 60
         ? mysql.createConnection({
@@ -403,7 +403,7 @@ function samplePeak() {
   say()
 }
 
-// ------------------------------------------------------------ 9. linha larga
+// ------------------------------------------------------------ 9. wide row
 {
   say('## 9. Linha larga (40 colunas de texto) — 10.000 linhas bufferizadas')
   say()
@@ -440,7 +440,7 @@ function samplePeak() {
   say()
 }
 
-// ------------------------------------------------------------- 10. fechamento
+// ------------------------------------------------------------- 10. closing
 {
   const end = memNow()
   say('## 10. Processo ao final')
@@ -450,5 +450,5 @@ function samplePeak() {
 }
 
 writeFileSync(OUT, lines.join('\n') + '\n', 'utf8')
-console.log(`relatório gravado em ${OUT} (${lines.join('\n').length} caracteres)`)
+console.log(`report written to ${OUT} (${lines.join('\n').length} characters)`)
 await conn.end()

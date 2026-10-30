@@ -1,5 +1,5 @@
 /**
- * Nome do produto, definido pela baseline consolidada.
- * Constante de domínio: não depende de Node, Electron nem Vue.
+ * Product name, taken from the consolidated baseline.
+ * Domain constant: does not depend on Node, Electron, or Vue.
  */
 export const PRODUCT_NAME = 'SeshatSQL'

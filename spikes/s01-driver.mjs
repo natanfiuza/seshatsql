@@ -1,15 +1,15 @@
 /**
- * Spike S01 — limites do driver mysql2 contra a instância MySQL alvo.
+ * Spike S01 — mysql2 driver limits against the target MySQL instance.
  *
- * Não é código de produto: existe só para produzir evidência para
- * docs/05-spikes.md (S01) e para o ADR do driver.
+ * Not product code: it exists only to produce evidence for
+ * docs/05-spikes.md (S01) and for the driver ADR.
  *
- * Uso:
+ * Usage:
  *   $env:SESHAT_DB_PASSWORD = '<senha>'          (PowerShell)
- *   node spikes/s01-driver.mjs > saida.md
+ *   node spikes/s01-driver.mjs > output.md
  *
- * A senha nunca é impressa nem gravada: vem só de variável de ambiente
- * e não aparece no relatório.
+ * The password is never printed or written: it comes only from an environment
+ * variable and does not appear in the report.
  */
 import { writeFileSync } from 'node:fs'
 
@@ -22,7 +22,7 @@ const PASSWORD = process.env.SESHAT_DB_PASSWORD
 const SCHEMA = 'seshat_spike'
 
 if (PASSWORD === undefined) {
-  console.error('SESHAT_DB_PASSWORD não definido')
+  console.error('SESHAT_DB_PASSWORD is not set')
   process.exit(2)
 }
 
@@ -72,7 +72,7 @@ async function main() {
   })
 
   try {
-    // ---- 1. Servidor e autenticação -------------------------------------
+    // ---- 1. Server and authentication ------------------------------------
     say('## 1. Servidor e autenticação')
     say()
     const [serverRows] = await defaultConnection.query(
@@ -97,7 +97,7 @@ async function main() {
     say(`- **plugin de autenticação**: ${describe(authRows[0]?.plugin)}`)
     say()
 
-    // ---- 2. Fixtures ------------------------------------------------------
+    // ---- 2. Fixtures -----------------------------------------------------
     await defaultConnection.query(`CREATE DATABASE IF NOT EXISTS \`${SCHEMA}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci`)
     await defaultConnection.query(`USE \`${SCHEMA}\``)
     await strictConnection.query(`USE \`${SCHEMA}\``)
@@ -127,7 +127,7 @@ async function main() {
       ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci
     `)
 
-    // Literais SQL para preservar exatidão que um número JS perderia.
+    // SQL literals to preserve exactness that a JS number would lose.
     await defaultConnection.query(`
       INSERT INTO types_probe
         (txt, vazio, big, decim, inteiro, flt, dt, ts, d, t, bin, blb, bitcol, js)
@@ -141,7 +141,7 @@ async function main() {
          '{"a":1,"b":[true,null,"x"]}')
     `)
 
-    // ---- 3. Tipos com opções padrão --------------------------------------
+    // ---- 3. Types with default options -----------------------------------
     say('## 2. Tipos com as opções padrão do mysql2')
     say()
     const [defaultRows, defaultFields] = await defaultConnection.query(
@@ -166,7 +166,7 @@ async function main() {
     })
     say()
 
-    // ---- 4. query() vs execute() ----------------------------------------
+    // ---- 4. query() vs execute() -----------------------------------------
     say('## 4. Protocolo de texto (`query`) vs preparado (`execute`)')
     say()
     const [qRows, qFields] = await defaultConnection.query('SELECT big, decim, inteiro, flt FROM types_probe')
@@ -178,7 +178,7 @@ async function main() {
     })
     say()
 
-    // ---- 5. NULL vs vazio vs zero ---------------------------------------
+    // ---- 5. NULL vs empty vs zero ----------------------------------------
     say('## 5. NULL, string vazia e zero')
     say()
     const [nullRows, nullFields] = await defaultConnection.query(
@@ -191,7 +191,7 @@ async function main() {
     })
     say()
 
-    // ---- 6. Unicode e colação -------------------------------------------
+    // ---- 6. Unicode and collation ----------------------------------------
     say('## 6. Unicode, emoji e comparação com colação')
     say()
     const [unicodeRows] = await defaultConnection.query(
@@ -202,7 +202,7 @@ async function main() {
     say(`- colação \`utf8mb4_0900_ai_ci\`: \`acai\` = \`açaí\` → ${describe(collationRows[0].igual)}`)
     say()
 
-    // ---- 7. Múltiplos conjuntos de resultado via CALL -------------------
+    // ---- 7. Multiple result sets via CALL --------------------------------
     say('## 7. Múltiplos conjuntos de resultado (`CALL`)')
     say()
     await defaultConnection.query(`
@@ -227,7 +227,7 @@ async function main() {
     say(`- \`ROW_COUNT()\` depois do CALL: ${describe(rcRows[0].row_count_apos_call)}`)
     say()
 
-    // ---- 8. Protocolo de erro -------------------------------------------
+    // ---- 8. Error protocol -----------------------------------------------
     say('## 8. Protocolo de erro')
     say()
     await defaultConnection.query('CREATE TABLE parent_fk (id INT PRIMARY KEY)')
@@ -258,7 +258,7 @@ async function main() {
     say(`| \`SHOW WARNINGS\` após os casos | ${JSON.stringify(warnRows).slice(0, 200)} |`)
     say()
 
-    // Credencial inválida em conexão separada.
+    // Invalid credentials on a separate connection.
     try {
       await mysql.createConnection({ host: HOST, port: PORT, user: USER, password: 'senha-invalida-proposital' })
       say('- conexão com senha inválida: **aceita** (inesperado)')
@@ -267,7 +267,7 @@ async function main() {
     }
     say()
 
-    // ---- 9. Datas e fuso ------------------------------------------------
+    // ---- 9. Dates and time zone ------------------------------------------
     say('## 9. Datas e fuso horário')
     say()
     const [dateRows] = await defaultConnection.query(
@@ -280,7 +280,7 @@ async function main() {
     say('- TIMESTAMP é convertido pelo servidor para o fuso da sessão antes de sair.')
     say()
 
-    // ---- 10. Statement preparado: reutilização e tipos -------------------
+    // ---- 10. Prepared statement: reuse and types -------------------------
     say('## 10. `execute()` com parâmetros')
     say()
     const [paramRows] = await defaultConnection.execute(
@@ -290,7 +290,7 @@ async function main() {
     say(`- parâmetros devolvidos: ${rowOf(['txt', 'num', 'nulo', 'data'], [paramRows[0].txt, paramRows[0].num, paramRows[0].nulo, paramRows[0].data])}`)
     say()
 
-    // ---- 11. Metadados de coluna ---------------------------------------
+    // ---- 11. Column metadata ---------------------------------------------
     say('## 11. Metadados de coluna')
     say()
     say('| coluna | type | flags | columnLength | decimals |')
@@ -309,13 +309,13 @@ async function main() {
   if (target === undefined) {
     process.stdout.write(report)
   } else {
-    // Grava em UTF-8 direto do Node: o console do PowerShell 5.1 corromperia emoji.
+    // Write UTF-8 straight from Node: the PowerShell 5.1 console would corrupt emoji.
     writeFileSync(target, report, 'utf8')
-    process.stdout.write(`relatório gravado em ${target} (${report.length} caracteres)\n`)
+    process.stdout.write(`report written to ${target} (${report.length} characters)\n`)
   }
 }
 
 main().catch((error) => {
-  console.error('FALHA NO SPIKE:', describeError(error))
+  console.error('SPIKE FAILED:', describeError(error))
   process.exit(1)
 })

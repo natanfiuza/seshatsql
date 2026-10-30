@@ -1,6 +1,6 @@
 import { _electron as electron, expect, test } from '@playwright/test'
 
-test('abre a janela principal com o nome do produto', async () => {
+test('opens the main window with the product name', async () => {
   const app = await electron.launch({ args: ['.'] })
 
   try {

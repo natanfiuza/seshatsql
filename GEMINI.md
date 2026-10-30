@@ -37,6 +37,9 @@ Em caso de divergência ou ambiguidade, o conteúdo de `CLAUDE.md` prevalece sem
 - **Transações e Lotes**: Lote aprovado é um snapshot imutável de SQL e contexto de execução; qualquer alteração demanda nova análise e confirmação. Parser inconclusivo emite aviso e requer confirmação do usuário.
 - **Resiliência e Erros**: Não repetir execução de SQL após queda de rede. Proibido executar `COMMIT` silencioso. Cancelamento de query não equivale a rollback global. Nunca prometer rollback para instruções DDL.
 - **Segurança de Credenciais**: Senhas armazenadas exclusivamente cifradas via API nativa do SO, sem fallback em texto claro. Queries legíveis em YAML são permitidas; proibido logar queries e dados sensíveis por padrão.
+- **Idioma do Código**: Todo código gerado é escrito em inglês — identificadores (variáveis, funções, classes, tipos), comentários, doc comments e nomes de teste. Textos exibidos ao usuário vêm dos catálogos de i18n (`en-US` padrão, `pt-BR`, `pt-PT`, `fr`, `es`), nunca fixos no código. Documentação, evidências e mensagens de produto em português permanecem em português.
+- Ao finalizar qualquer tarefa, gerar relatório detalhado em `docs/gemini/reports/{branch}/{dataatual}_{taskname}.md`, onde {dataatual} deve ser substituida pelo data atual, e onde {branch} deve ser substituida pela branch atual, onde {taskname} deve ser uma descricao curta da tarefa, sem espaços ou caracteres especiais, apenas letras minusculas, separados por underscore.
+
 
 ### Tarefas e Critérios de Encerramento
 - Cada tarefa deve especificar com precisão: objetivo, dependências, critérios de aceitação, testes aplicados, riscos identificados e condições de parada.

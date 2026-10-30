@@ -6,7 +6,7 @@ import fr from './locales/fr'
 import ptBR from './locales/pt-BR'
 import ptPT from './locales/pt-PT'
 
-// R22: en-US padrão, pt-BR, pt-PT, fr, es.
+// R22: en-US default, pt-BR, pt-PT, fr, es.
 export const SUPPORTED_LOCALES = ['en-US', 'pt-BR', 'pt-PT', 'fr', 'es'] as const
 
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
