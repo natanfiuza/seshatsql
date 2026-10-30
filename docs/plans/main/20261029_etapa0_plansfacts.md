@@ -1,0 +1,132 @@
+# Plano — Etapa 0 (preparação técnica controlada)
+Data: 2026-10-29 · Branch: `main` · Pasta: `main` (movido de `local` após a criação do repositório) · Status: **T00 executado** (`package.json` + `package-lock.json` gerados, exit 0); lockfile **aguardando aprovação**; T01 **não** iniciado
+
+> **Nota:** o diretório virou repositório Git durante a sessão (commit `a44d40b`, branch `main`, remoto `natanfiuza/seshatsql`, sincronizado), sem ação do agente. Ver §0 do survey.
+
+## Contexto
+
+O workspace contém apenas documentação — sem código, `package.json`, lockfile ou `.git`. A Etapa 0 (`docs/plano-etapa0.md`) pede inventário do ambiente, matriz de versões/licenças com fontes, riscos, plano exato de scaffold e comandos propostos, **sem gerar aplicação, instalar dependências, criar repositório ou acessar bancos**. A execução (T00/T01) só começa após nova aprovação.
+
+Marcação: **[V]** verificado nesta sessão · **[P]** proposto · **[B]** bloqueado.
+
+## Decisões aprovadas
+
+| # | Decisão | Efeito |
+|---|---|---|
+| D-01 | Node de build **22.18.0**; `engines >=22.12.0` | Nenhuma instalação; 24.22.2 vira alvo futuro |
+| D-02 | **electron-vite 6.0.0 + Vite 8.3.5** | Substitui explicitamente o 5.0.0 da baseline |
+| D-03 | **TypeScript 6.0.3** | Evita a API instável do TS 7 (Go) |
+| D-04 | Scaffold **na raiz, sem `git init`** | Decisão tomada antes de o repositório existir; o agente não inicializou Git. Ver nota do cabeçalho |
+| D-05 | Camadas **na raiz** (`src/domain`, `src/application`, `src/infrastructure`) + `main/preload/renderer` finos | Separação exigida sem duplicar código |
+| D-06 | MySQL descartável **adiado para T02**, bloqueio registrado | Etapa 0 não instala nada |
+| D-07 | Docs da sessão em `docs/plans/local/` e `docs/survey/` | `local` no lugar de `{branch}` |
+| D-08 | Atualizar `docs/03` e `docs/08` com as versões decididas | Registra a divergência sem apagar o texto anterior |
+| D-09 | MySQL 8.4 LTS na porta **3307** (o MariaDB local em 3306 não serve) | Instalação pendente de autorização de execução |
+| D-10 | appId **`br.com.natanfiuza.seshatsql`** | Usado no `electron-builder.yml` em T13 |
+| D-11 | **Sem certificado** de assinatura no MVP | Publisher indefinido; aviso do SmartScreen documentado |
+| D-12 | Agente não faz commit/push nem operação GitHub; pedir `gitpr` ao fim de cada tarefa | Registrado em `CLAUDE.md` |
+| D-13 | `dompurify` usado sob **Apache-2.0** (é `MPL-2.0 OR Apache-2.0`) | Evita obrigação MPL sobre o bundle do renderer |
+| D-14 | `electron`, `electron-vite` e `vite` em **`devDependencies`** | Ferramentas de build não entram no pacote do `electron-builder`; desvio do plano registrado em §7.1 do survey |
+
+## Matriz a congelar em T00 **[V]**
+
+| Pacote | Versão | Licença |
+|---|---|---|
+| electron | 45.1.0 | MIT |
+| electron-vite | 6.0.0 | MIT |
+| vite | 8.3.5 | MIT |
+| vue | 3.5.44 | MIT |
+| @vitejs/plugin-vue | 6.0.10 | MIT |
+| typescript | 6.0.3 | Apache-2.0 |
+| vue-tsc | 3.3.14 | MIT |
+| @types/node | 24.19.2 | MIT |
+| mysql2 | 3.24.6 | MIT |
+| monaco-editor | 0.57.0 | MIT |
+| ag-grid-community / ag-grid-vue3 | 36.2.0 | MIT |
+| vue-i18n | 11.4.16 | MIT |
+| zod | 4.6.7 | MIT |
+| yaml | 2.9.1 | **ISC** |
+| vitest | 5.0.5 | MIT |
+| @playwright/test | 1.64.1 | **Apache-2.0** |
+| electron-builder | 26.18.0 | MIT |
+| eslint | 10.13.0 | MIT |
+| eslint-plugin-vue | 10.12.0 | MIT |
+
+## Plano de scaffold **[P]**
+
+```
+/
+├─ package.json            # versões exatas; "engines": { "node": ">=22.12.0" }
+├─ package-lock.json       # gerado em T00, versionado
+├─ .npmrc                  # save-exact=true, engine-strict=true
+├─ .gitignore              # node_modules/, out/, dist/, *.log
+├─ electron.vite.config.ts
+├─ tsconfig.json / tsconfig.node.json / tsconfig.web.json
+├─ docs/
+├─ src/
+│  ├─ domain/              # TS puro: perfis, abas, snapshot, outcomes
+│  ├─ application/         # casos de uso e contratos de IPC tipados
+│  ├─ infrastructure/      # mysql2, fs/YAML, safeStorage, logging (main)
+│  ├─ main/                # janela, handlers IPC, validação/autorização
+│  ├─ preload/             # contextBridge mínimo, métodos nomeados
+│  └─ renderer/
+│     ├─ index.html
+│     └─ src/{ui,i18n}/
+└─ tests/{unit,e2e}/
+```
+
+`electron-builder.yml` **não** entra em T01: o appId está definido (`br.com.natanfiuza.seshatsql`, D-10), mas publisher e empacotamento ficam para T13 (D-11).
+
+Scripts de T01: `dev`, `build`, `typecheck`, `lint`, `test`, `test:e2e`, `dist:win`.
+Segurança: `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, preload sem `invoke` genérico, CSP sem relaxamento global.
+Lockfile: versionado; `npm ci` só após aprovação; versões exatas; `engine-strict=true`; sem atualização automática.
+
+## Comandos propostos (não executados) **[P]**
+
+```powershell
+# T00 — após aprovação da matriz
+npm.cmd install --save-exact electron@45.1.0 electron-vite@6.0.0 vite@8.3.5 vue@3.5.44 `
+  mysql2@3.24.6 monaco-editor@0.57.0 ag-grid-community@36.2.0 ag-grid-vue3@36.2.0 `
+  vue-i18n@11.4.16 zod@4.6.7 yaml@2.9.1
+npm.cmd install --save-dev --save-exact typescript@6.0.3 vue-tsc@3.3.14 @vitejs/plugin-vue@6.0.10 `
+  @types/node@24.19.2 vitest@5.0.5 @playwright/test@1.64.1 electron-builder@26.18.0 `
+  eslint@10.13.0 eslint-plugin-vue@10.12.0
+
+# T01 — após lockfile aprovado
+npm.cmd ci ; npm.cmd run typecheck ; npm.cmd run lint ; npm.cmd run test ; npm.cmd run dev
+```
+
+Inventário de licenças: `npm ls --json` + campos do registro — **sem** adicionar ferramenta nova.
+
+## Critérios de aceite do T00 — resultado
+
+| # | Critério | Resultado |
+|---|---|---|
+| 1 | `package.json` com versões exatas e `engines` | **atendido** — 20 pacotes de topo, todos com versão exata; `engines.node >=22.12.0`; `.npmrc` com `save-exact=true` e `engine-strict=true` |
+| 2 | `package-lock.json` gerado e revisado | **gerado** (`lockfileVersion 3`, 500 entradas) — **revisão do usuário pendente** |
+| 3 | `npm ls` sem conflito de peer | **atendido** — exit 0, nenhum `invalid`/`UNMET` |
+| 4 | Inventário de licenças com transitivas | **atendido** — survey §7.2; zero GPL/AGPL/LGPL; MPL só em `lightningcss`, `lightningcss-win32-x64-msvc` e `dompurify` |
+| 5 | Nenhum segredo em arquivo versionado | **atendido** — única credencial conhecida não aparece em nenhum arquivo; não há `.env` |
+
+Aceite completo exige a revisão do lockfile pelo usuário (critério 2). **T01 depende dela.**
+
+Arquivos criados em T00: `package.json`, `package-lock.json`, `.npmrc`, `.gitignore`. `node_modules/` está no `.gitignore` e não deve ser versionado.
+
+## Bloqueios **[B]**
+
+- **B-01** **MySQL Community 8.4.13** disponível em `127.0.0.1:3307` (D-09 executada pelo usuário). Faltam **9.7 LTS** e **8.0.46 legado** para fechar R25 → S01–S04/T02.
+- **B-02** Nenhuma operação GitHub pelo agente; commit e PR executados pelo usuário via `gitpr` ao fim de cada tarefa (D-12) → P05, publicação.
+- **B-03** appId definido (D-10); publisher indefinido porque não haverá certificado no MVP (D-11) → `electron-builder.yml`, T13.
+- **B-04** ~~`LICENSE` ausente~~ — **resolvido**: `LICENSE` com texto oficial MPL-2.0 criado em 2026-10-29.
+
+## Verificação
+
+| Etapa | Comando | Evidência |
+|---|---|---|
+| Lockfile sincronizado com `package.json` | `npm.cmd ci --dry-run` | **exit 0** (executado em 2026-10-29) |
+| Lockfile reprodutível | `npm.cmd ci` | pendente — só após aprovação do lockfile |
+| Tipos | `npm.cmd run typecheck` | exit 0 |
+| Unitários | `npm.cmd run test` | relatório Vitest |
+| App abre | `npm.cmd run dev` | janela Electron sem servidor externo |
+| Build | `npm.cmd run build` | `out/` gerado |
+| Pacote | `npm.cmd run dist:win` | NSIS x64 (T13) |

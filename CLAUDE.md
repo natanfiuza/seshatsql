@@ -2,6 +2,7 @@
 ## Autoridade e revisão
 Os requisitos aceitos vêm das rodadas 1–6 consolidadas. Propostas e pendências não são autorizações. Usuário revisa cada etapa; não iniciar a seguinte automaticamente. Nunca alegar testes/build aprovados sem comandos, resultados e evidências.
 Nome vigente SeshatSQL; não inventar appId, conta GitHub ou caminhos novos. A mudança de diretório depende de P01. Não consultar/copiar documentação antiga por cima da baseline sem registrar conflito.
+Git é somente leitura para o agente: `git commit` e `git push` são proibidos sem exceção, e nenhuma operação GitHub é executada pelo agente. Ao final de cada tarefa, solicitar ao usuário que execute o commit e o pull request com a ferramenta `gitpr`.
 ## Limites do MVP
 Electron + TypeScript + Vue 3; Windows 11 x64; MySQL. Não adicionar backend web, exportação/importação, extensões, IA, colaboração, outros bancos ou editor de grid. MPL-2.0 escolhida; incluir texto original oficial e avisos corretos antes de publicar. Não copiar/traduzir implementações/assets do HeidiSQL.
 ## Regras técnicas
