@@ -1,5 +1,5 @@
 # Plano — Etapa 0 (preparação técnica controlada)
-Data: 2026-10-29 · Branch atual: `develop_natan` · Pasta: `main` (criada antes da branch atual e mantida para não quebrar os links das etapas anteriores) · Status: **T00, T01, S01, S02 e S03 executados** — typecheck, lint, unitários, build, e2e e dev verificados com exit 0; lockfile **aguardando aprovação** (mudou com `typescript-eslint`); S01–S03 medidos contra MySQL 8.4.13 (ADR 0011, 0012 e 0013 propostos); S04 **não** iniciado
+Data: 2026-10-29 · Branch atual: `develop_natan` · Pasta: `main` (criada antes da branch atual e mantida para não quebrar os links das etapas anteriores) · Status: **T00, T01, S01, S02, S03 e S04 executados** — typecheck, lint, unitários, build, e2e e dev verificados com exit 0; lockfile **aguardando aprovação** (mudou com `typescript-eslint`); S01–S04 medidos contra MySQL 8.4.13 (ADR 0011, 0012, 0013 e 0014 propostos); T02 concluído, S05/T03 **não** iniciados
 
 > **Nota:** o diretório virou repositório Git durante a sessão (commit `a44d40b`, branch `main`, remoto `natanfiuza/seshatsql`, sincronizado), sem ação do agente. Ver §0 do survey.
 
@@ -181,9 +181,30 @@ Fatos que mudam o desenho do pipeline:
 
 Correções de processo no S03: expectativas do corpus ajustadas à evidência (rotina gera 3 fragmentos, não 1); seção de `sql_mode` passou a aplicar o modo por linha; regex de `--` reescrita de bytes de controle literais para `[\s\x00-\x1f]`; helper não usado removido. `npm run lint` final: **exit 0**.
 
-Não medido: cancelamento/estado de transação após erro (S04); `sql_mode` além de padrão, `NO_BACKSLASH_ESCAPES` e `ANSI_QUOTES`; linhas 9.7 e 8.0.46.
+Não medido: cancelamento/estado de transação após erro (S04, executado em seguida); `sql_mode` além de padrão, `NO_BACKSLASH_ESCAPES` e `ANSI_QUOTES`; linhas 9.7 e 8.0.46.
 
-**Retomada:** `docs/plans/develop_natan/20261029_retomada-s04_plansfacts.md` — estado ao fim do S03 e o passo a passo do próximo estágio.
+### S04 — sessão, cancelamento e `unknown` (executado em 2026-10-30)
+
+| Item | Resultado |
+|---|---|
+| Gerador | `spikes/s04-sessao.mjs` — conexão de trabalho + conexão auxiliar de controle, 12 experimentos |
+| Verificação | **0 falhas** em 12 experimentos |
+| Evidência | `docs/spikes/20261030_s04-session-cancel-evidence.md` (8.555 caracteres) |
+| Decisão proposta | `docs/adr/0014-cancelamento-e-sessao.md` — status **proposto** |
+| Decisões de entrada | `docs/plans/develop_natan/20261030_s04_sessao_e_cancelamento_plansfacts.md` (D-S04-01…05) |
+
+Fatos que mudam o desenho da sessão:
+
+1. **Cancelar ≠ rollback:** `KILL QUERY` interrompe o comando (`ER_QUERY_INTERRUPTED/1317/70100`) e a transação **continua aberta**; a conexão segue utilizável.
+2. **`SELECT SLEEP` não serve como prova de cancelamento:** interrompido, devolve sucesso com 1 e algum erro não ocorre. Os testes usam uma consulta real sobre `vol`.
+3. **`INNODB_TRX` pode vir defasada:** logo após `ROLLBACK` ainda mostrou a transação. A medição passou a repetir até estabilizar — e o app precisa da mesma cautela antes de afirmar "sem transação".
+4. **`INNODB_TRX` exige `PROCESS`:** um usuário só com `SELECT` recebe `ER_SPECIFIC_ACCESS_DENIED_ERROR/1227/42000`. A D-S04-02 ("servidor como verdade") só vale quando o usuário tem o privilégio; sem ele, rastreio do cliente + `unknown`.
+5. **`destroy()` não encerra sessão com comando em voo:** a conexão só fecha quando o comando termina e o cliente ainda recebe o resultado. Para encerrar de fato, `KILL CONNECTION` pela auxiliar.
+6. **`LOCK TABLES` e `UNLOCK TABLES`:** `LOCK` bloqueia outra sessão e commita a transação aberta; `BEGIN` depois do `LOCK` libera o lock; `UNLOCK` não commita a transação iniciada depois — divergente da documentação do MySQL, vale o medido.
+7. **`mysql2` enfileira** comandos concorrentes (segundo esperou 1010 ms): "uma execução ativa" precisa ser imposta pelo aplicativo.
+8. **Corrida "queda durante o `COMMIT`" não reproduzida** em 4 tentativas — `unknown` registrado como política, não como medição.
+
+Não medido: linhas 9.7 e 8.0.46 (B-01); causa do comportamento de `destroy()` (driver ou protocolo).
 
 ## Bloqueios **[B]**
 
