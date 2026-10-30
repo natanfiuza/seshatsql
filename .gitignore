@@ -1,0 +1,14 @@
+# Dependências
+node_modules/
+
+# Saídas de build (electron-vite / electron-builder)
+out/
+dist/
+
+# Logs e artefatos locais
+*.log
+*.tsbuildinfo
+
+# Nunca versionar credenciais ou perfis locais
+.env
+.env.*
