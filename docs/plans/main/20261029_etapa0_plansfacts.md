@@ -1,5 +1,5 @@
 # Plano — Etapa 0 (preparação técnica controlada)
-Data: 2026-10-29 · Branch: `main` · Pasta: `main` (movido de `local` após a criação do repositório) · Status: **T00 e T01 executados** — typecheck, lint, unitários, build, e2e e dev verificados com exit 0; lockfile **aguardando aprovação** (mudou com `typescript-eslint`); T02 **não** iniciado
+Data: 2026-10-29 · Branch: `main` · Pasta: `main` (movido de `local` após a criação do repositório) · Status: **T00, T01 e S01 executados** — typecheck, lint, unitários, build, e2e e dev verificados com exit 0; lockfile **aguardando aprovação** (mudou com `typescript-eslint`); S01 medido contra MySQL 8.4.13 (ADR 0011 proposto); S02–S04 **não** iniciados
 
 > **Nota:** o diretório virou repositório Git durante a sessão (commit `a44d40b`, branch `main`, remoto `natanfiuza/seshatsql`, sincronizado), sem ação do agente. Ver §0 do survey.
 
@@ -126,9 +126,30 @@ Desvios e decisões de T01 (detalhe no §8 do survey): main/preload em **CJS** p
 
 **Não executado:** `npm run dist:win` (depende de `electron-builder.yml` → T13); `npm ci` integral (só `--dry-run`).
 
+## T02 / S01 — spike do driver (executado em 2026-10-30)
+
+| Item | Resultado |
+|---|---|
+| Gerador | `spikes/s01-driver.mjs` — fora de `src/`, não entra no build |
+| Servidor | MySQL **8.4.13** em `127.0.0.1:3307`, `caching_sha2_password`, sessão `SYSTEM` (UTC−3) |
+| Schema | `seshat_spike` (descartável, dados sintéticos, mantido para S02) |
+| Evidência | `docs/spikes/20261029_s01-driver-evidence.md` — 11 seções, 6080 caracteres |
+| Execução | exit 0; nenhuma exceção não tratada; senha só por variável de ambiente |
+| Decisão proposta | `docs/adr/0011-driver-mysql.md` — status **proposto**, decisão humana pendente |
+
+Fatos que mudam o desenho da camada de infraestrutura:
+
+1. **BIGINT perde precisão por padrão** → exige `supportBigNumbers` + `bigNumberStrings`; o mesmo vale para parâmetros de `execute()`.
+2. **Datas viram `Date` no fuso do processo** → exige `dateStrings: true` para não reinterpretar o valor do servidor.
+3. **`multipleStatements` é `false` por padrão** — coerente com a regra de snapshot; deve ser fixado explicitamente para não ser afrouxado depois.
+4. **`CALL` devolve N conjuntos + `OkPacket`** e `ROW_COUNT()` = `-1` — a contagem da confirmação de execução não pode vir daí.
+5. Protocolo de erro é suficiente (`code`/`errno`/`sqlState`) para mapear mensagens, inclusive acesso negado (1045).
+
+**Não medido em S01** (fica para S02–S04): volume/memória/streaming, cancelamento, estado de transação após falha de rede, permissões. S01 cobre só a linha 8.4 — 9.7 LTS e 8.0.46 seguem sem ambiente.
+
 ## Bloqueios **[B]**
 
-- **B-01** **MySQL Community 8.4.13** disponível em `127.0.0.1:3307` (D-09 executada pelo usuário). Faltam **9.7 LTS** e **8.0.46 legado** para fechar R25 → S01–S04/T02.
+- **B-01** **MySQL Community 8.4.13** disponível em `127.0.0.1:3307` (D-09 executada pelo usuário); S01 já medido nessa linha. Faltam **9.7 LTS** e **8.0.46 legado** para fechar R25; o ADR 0011 não pode ser aceito como definitivo antes disso.
 - **B-02** Nenhuma operação GitHub pelo agente; commit e PR executados pelo usuário via `gitpr` ao fim de cada tarefa (D-12) → P05, publicação.
 - **B-03** appId definido (D-10); publisher indefinido porque não haverá certificado no MVP (D-11) → `electron-builder.yml`, T13.
 - **B-04** ~~`LICENSE` ausente~~ — **resolvido**: `LICENSE` com texto oficial MPL-2.0 criado em 2026-10-29.

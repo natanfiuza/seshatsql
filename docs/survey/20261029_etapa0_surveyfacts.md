@@ -1,5 +1,5 @@
 # Survey — Etapa 0 (preparação técnica controlada)
-Data: 2026-10-29 · Branch: `main` · Status: Etapa 0 entregue; **T00 e T01 executados** (§7 e §8); revisão do lockfile pendente; T02 não iniciado
+Data: 2026-10-29 · Branch: `main` · Status: Etapa 0 entregue; **T00, T01 e S01 executados** (§7–§9); revisão do lockfile pendente; S02–S04 não iniciados
 
 ## 0. Alteração de estado durante a sessão
 
@@ -266,3 +266,45 @@ Autorizado pelo usuário na revisão de T00 ("continue"). Escopo: configuração
 - `npm ci` integral **não foi executado**; só `--dry-run`. O lockfile mudou depois da aprovação de T00 (entrada do `typescript-eslint`), então a revisão do lockfile continua pendente.
 - Não há IPC de consulta, driver, parser, Monaco nem grid. `preload` expõe apenas uma constante.
 - A janela não tem menu customizado, tema nem persistência — T11 e adiante.
+
+## 9. T02 — spike S01 do driver (2026-10-30)
+
+Autorizado pelo usuário ("continue"). Escopo: apenas S01 — comportamento do `mysql2` contra a linha **8.4**. Nada de aplicação, IPC ou feature.
+
+### 9.1 Ambiente do spike
+
+- Servidor: **MySQL Community 8.4.13** (`MySQL Community Server - GPL`) em `127.0.0.1:3307`, instalado pelo usuário.
+- Autenticação: `caching_sha2_password` sobre TCP, sem opção extra no cliente.
+- Schema descartável criado pelo spike: **`seshat_spike`** (mantido de propósito para reuso em S02). Nenhum schema de usuário foi tocado.
+- Processo Node em `America/Sao_Paulo`; sessão em `time_zone = SYSTEM` (`system_time_zone = "Hora oficial do Brasil"`), ou seja, UTC−3.
+- Gerador: `spikes/s01-driver.mjs` (fora de `src/`, não entra no build). Grava relatório UTF-8 em arquivo para não depender do console do PowerShell 5.1, que corrompe acentos e emoji.
+- Evidência bruta: `docs/spikes/20261029_s01-driver-evidence.md` (6080 caracteres, 11 seções).
+
+### 9.2 O que foi medido (fatos, não documentação)
+
+| Aspecto | Resultado observado |
+|---|---|
+| BIGINT > 2^53 | padrão: `number 9007199254740992` (perdeu o `3`); com `supportBigNumbers`+`bigNumberStrings`: `"9007199254740993"` |
+| DECIMAL(65,30) | string exata nas duas configurações — sem coerção |
+| DATETIME / TIMESTAMP / DATE | padrão: `Date` no fuso do processo (`13:45:10` → `16:45:10Z`); com `dateStrings`: literais `"2026-10-29 13:45:10.123456"` / `"2026-10-29"` |
+| TIME | string nas duas configurações |
+| BLOB / VARBINARY / BIT | `Buffer` nas duas configurações |
+| JSON | objeto já desserializado |
+| NULL vs `''` vs `0` vs `' '` vs `'NULL'` | todos distinguíveis |
+| Unicode | `Olá, 世界 😀 'quote'` íntegro; 17 caracteres, 25 bytes; `acai = açaí` sob `utf8mb4_0900_ai_ci` |
+| `CALL` | array de 3: dois conjuntos de linhas + `OkPacket`; parâmetro `OUT` chega em `ok`; `ROW_COUNT()` depois do `CALL` = `-1` |
+| Erros | `code`/`errno`/`sqlState`/`sqlMessage` presentes em sintaxe (1064/42000), tabela (1146/42S02), coluna (1054/42S22), duplicidade (1062/23000), FK (1451/23000) e senha inválida (1045/28000) |
+| Lote de 3 statements | recusado pelo driver (1064) — `multipleStatements` é `false` por padrão |
+| `execute()` com parâmetro numérico grande | mesma perda de precisão na **entrada** (`9007199254740993` → `9007199254740992`) |
+| Metadados de coluna | `columnType`, `flags`, `columnLength`, `decimals` disponíveis por coluna em `fields` |
+
+### 9.3 Decisão proposta (ADR 0011)
+
+`docs/adr/0011-driver-mysql.md`, status **proposto** — decisão humana pendente. Propõe `mysql2` 3.24.6 fixo com `supportBigNumbers: true`, `bigNumberStrings: true`, `dateStrings: true`, `multipleStatements: false`. Consequência central: BIGINT/DECIMAL e datas chegam como texto, e o parse/format é nosso.
+
+### 9.4 Riscos e limitações
+
+- Só a linha **8.4** foi medida. Sem ambiente para **9.7 LTS** e **8.0.46** (B-01 parcialmente aberto) — o ADR não pode ser dado como definitivo.
+- Não medido em S01 (fica para S02–S04): volume/memória/streaming, cancelamento, estado de transação após falha de rede, permissões.
+- O schema `seshat_spike` permanece no servidor; é descartável e contém apenas dados sintéticos. A senha usada veio por variável de ambiente e **não** foi gravada em arquivo algum (verificado).
+- `npm run lint` passou a cobrir `spikes/` e acusou 5 variáveis não usadas no gerador. Foram corrigidas, o lint voltou a **exit 0** e o spike foi reexecutado com a versão final (exit 0; saída idêntica, 6080 caracteres — só mudou o instante da execução).

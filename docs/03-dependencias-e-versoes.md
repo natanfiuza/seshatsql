@@ -30,3 +30,7 @@ Acrescentada uma dependência fora da matriz aprovada: **typescript-eslint 8.72.
 Scripts criados no `package.json`: `dev`, `build`, `preview`, `typecheck` (`typecheck:node` com `tsc -p tsconfig.node.json`, `typecheck:web` com `vue-tsc -p tsconfig.web.json`), `lint`, `test`, `test:e2e`, `dist:win`. O `typecheck` usa `-p` explícito e nunca `tsc -b`; o `tsconfig.json` da raiz tem apenas `references`, para editores.
 Main e preload são compilados como **CommonJS** porque o `package.json` não declara `"type": "module"` e o preload sandboxed do Electron não aceita ESM. O renderer é empacotado como ESM pelo Vite.
 `dist:win` existe como script planejado, mas não pode rodar antes de `electron-builder.yml` (T13, depende do publisher/B-03).
+## S01 — comportamento do mysql2 3.24.6 (2026-10-30)
+Medido contra MySQL 8.4.13 em `127.0.0.1:3307`; evidência em `docs/spikes/20261029_s01-driver-evidence.md`. A versão instalada (3.24.6) é a mesma da matriz de T00 — nenhuma dependência mudou.
+As opções de conexão propostas (ADR 0011, status *proposto*) são `supportBigNumbers: true`, `bigNumberStrings: true`, `dateStrings: true` e `multipleStatements: false`. Sem as três primeiras, BIGINT acima de 2^53 perde precisão e datas são reinterpretadas no fuso do processo Node; sem a última, tolera-se que o padrão seja afrouxado mais tarde.
+Resta não medido nesta dependência: streaming/backpressure, memória com volume, cancelamento e estado de transação após falha de rede — S02–S04.
