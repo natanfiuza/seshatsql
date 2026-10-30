@@ -1,5 +1,5 @@
 # Plano — Etapa 0 (preparação técnica controlada)
-Data: 2026-10-29 · Branch: `main` · Pasta: `main` (movido de `local` após a criação do repositório) · Status: **T00 executado** (`package.json` + `package-lock.json` gerados, exit 0); lockfile **aguardando aprovação**; T01 **não** iniciado
+Data: 2026-10-29 · Branch: `main` · Pasta: `main` (movido de `local` após a criação do repositório) · Status: **T00 e T01 executados** — typecheck, lint, unitários, build, e2e e dev verificados com exit 0; lockfile **aguardando aprovação** (mudou com `typescript-eslint`); T02 **não** iniciado
 
 > **Nota:** o diretório virou repositório Git durante a sessão (commit `a44d40b`, branch `main`, remoto `natanfiuza/seshatsql`, sincronizado), sem ação do agente. Ver §0 do survey.
 
@@ -111,6 +111,20 @@ Inventário de licenças: `npm ls --json` + campos do registro — **sem** adici
 Aceite completo exige a revisão do lockfile pelo usuário (critério 2). **T01 depende dela.**
 
 Arquivos criados em T00: `package.json`, `package-lock.json`, `.npmrc`, `.gitignore`. `node_modules/` está no `.gitignore` e não deve ser versionado.
+
+## T01 — scaffold (executado em 2026-10-29)
+
+Criados: `electron.vite.config.ts`; `tsconfig.json`/`tsconfig.node.json`/`tsconfig.web.json`; `eslint.config.mjs`; `vitest.config.mts`; `playwright.config.ts`; `src/domain`, `src/main`, `src/preload`, `src/renderer`; `tests/unit` e `tests/e2e`.
+
+| Critério de saída (docs/06) | Resultado |
+|---|---|
+| janela local abre | **atendido** — `npm run dev` abriu janela com título `SeshatSQL`; e2e abriu o app compilado |
+| typecheck/test/lint básicos | **atendido** — os três com exit 0; 6 testes unitários + 1 e2e passando |
+| sem API privilegiada ampla | **atendido** — preload expõe só `{ productName }` congelado; `contextIsolation` e `sandbox` ligados, `nodeIntegration` desligado; `window.open` e navegação bloqueados |
+
+Desvios e decisões de T01 (detalhe no §8 do survey): main/preload em **CJS** porque o preload sandboxed não aceita ESM; **`typescript-eslint@8.72.1`** adicionado (o ESLint 10 não traz parser de TypeScript); CSP provisória pendente do S05.
+
+**Não executado:** `npm run dist:win` (depende de `electron-builder.yml` → T13); `npm ci` integral (só `--dry-run`).
 
 ## Bloqueios **[B]**
 

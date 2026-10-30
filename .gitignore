@@ -5,6 +5,10 @@ node_modules/
 out/
 dist/
 
+# Artefatos de teste
+test-results/
+playwright-report/
+
 # Logs e artefatos locais
 *.log
 *.tsbuildinfo
