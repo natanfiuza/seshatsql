@@ -1,5 +1,5 @@
 # Survey — Etapa 0 (preparação técnica controlada)
-Data: 2026-10-29 · Branch: `main` · Status: Etapa 0 entregue; **T00, T01, S01 e S02 executados** (§7–§10); revisão do lockfile pendente; S03–S04 não iniciados
+Data: 2026-10-29 · Branch atual: `develop_natan` (o trabalho começou em `main`; ver §0) · Status: Etapa 0 entregue; **T00, T01, S01, S02 e S03 executados** (§7–§11); revisão do lockfile pendente; S04 não iniciado
 
 ## 0. Alteração de estado durante a sessão
 
@@ -354,3 +354,53 @@ O que protege a memória não é o número de linhas, é o **total de bytes reti
 - Cancelamento, `KILL QUERY` e estado de transação após cancelamento **não** foram testados — S04.
 - Os números de tempo dependem do buffer pool (128 MB) e do disco da máquina; servem como ordem de grandeza, não como SLAs.
 - Nenhum valor proposto foi aplicado em código.
+
+## 11. T02 — spike S03 de divisão de SQL e fallback (2026-10-30)
+
+Autorizado pelo usuário ("continue"). Escopo: divisão de lotes, `sql_mode`, rotinas e política de recusa — sem cancelamento (S04).
+
+### 11.1 Ambiente e método
+
+- Mesmo servidor do S01/S02: MySQL **8.4.13** em `127.0.0.1:3307`, schema descartável `seshat_spike`.
+- Gerador: `spikes/s03-splitter.mjs` — tokenizador por estado, corpus de 28 entradas, execução real de cada comando no servidor e gravação do relatório em UTF-8.
+- Evidência: `docs/spikes/20261029_s03-sql-splitting-evidence.md` (10.030 caracteres, 6 seções, **28 casos**, 38 execuções, **0 falhas de verificação**).
+- Objetos criados no schema descartável: tabela `s03_probe`, procedimento `p_multi` (reutilizado) e `p_whole` (criado e removido na sonda).
+
+### 11.2 Resultados medidos
+
+| Aspecto | Resultado observado |
+|---|---|
+| `split(';')` ingênuo | erra a contagem em **11 de 28** casos |
+| `;` em string, backtick, comentário, subconsulta, JSON | 1 comando em todos, com valor correto devolvido pelo servidor |
+| `SELECT '\\'; SELECT 2 AS b;` | 2 comandos — barra dupla não escapa a aspa final |
+| `--` sem espaço (`SELECT 1--2`) | **não** é comentário; resultado `3` |
+| `#` e `/* ... */` | comentário de linha/bloco respeitados |
+| `/*!40101 SET @x = 1 */;` | comentário **executável**: classificado `session` e executado |
+| `NO_BACKSLASH_ESCAPES` | `'it\'s'` → `unbalanced-string` no splitter e `ER_PARSE_ERROR/1064` no texto cru |
+| `ANSI_QUOTES` | `"a;b"` → `ER_BAD_FIELD_ERROR/1054/42S22` (identificador, não string) |
+| `CALL p_multi(@total)` | 1 comando, 3 conjuntos (2 de linhas + `OkPacket`) |
+| `CREATE PROCEDURE ... BEGIN ... END` | splitter produz **3 fragmentos** (`ddl, read, unknown`) |
+| mesmo corpo enviado **inteiro** | **aceito como um comando único**, apesar dos `;`; `CALL` devolveu 3 conjuntos |
+| `DELIMITER $$` | comando de cliente; classificado `unknown` e o lote é bloqueado |
+| string/comentário não terminados | `unbalanced-string` / `unbalanced-comment`; lote bloqueado |
+| lote cru no driver | `ER_PARSE_ERROR/1064/42000` — o driver não divide nada |
+
+### 11.3 Correções feitas durante o spike
+
+- **Bug real no splitter:** `/*!40101 SET @x = 1 */;` produzia **zero** comandos — `stripLeadingComments` engolia o comentário executável e o comando server-side seria descartado em silêncio. Corrigido com `sawContent` + retorno antecipado em `/*!`/`/*+`.
+- **Expectativas do corpus ajustadas à evidência:** a primeira versão esperava 1 comando para o corpo de rotina; o splitter devolve 3 e está certo ao não adivinhar. A segurança passou a ser **de lote** (`routine-body`, `delimiter-command` bloqueiam tudo), não de comando isolado.
+- **ANSI_QUOTES inicialmente "aprovava"** porque o caso era executado na sessão padrão; a seção 4 passou a aplicar `SET SESSION sql_mode` por linha e a mostrar também o texto cru.
+- **Lint:** `spikes/` é coberto por `eslint .`; um helper `fmt` não usado foi removido e a regex de `--` foi reescrita de bytes de controle literais (`[\s<NUL>-<US>]`) para a forma escapada `[\s\x00-\x1f]` — o arquivo deixou de ser "binário" para o `grep`. Lint final: **exit 0**.
+- O spike foi reexecutado após as correções: exit 0, 0 falhas, 9.933 caracteres.
+
+### 11.4 Decisão proposta (ADR 0013)
+
+`docs/adr/0013-splitter-e-fallback.md` — status **proposto**. Tokenizador próprio (nunca `split(';')`), classificação por comando (`read/write/ddl/session/routine/transaction/unknown`), bloqueio **do lote inteiro** em `unbalanced-string`, `unbalanced-comment`, `routine-body` e `delimiter-command`, splitter parametrizado pelo `sql_mode` (reanálise após `SET sql_mode`), execução sequencial parando no primeiro erro e aviso + confirmação onde a análise for inconclusiva.
+
+### 11.5 Limitações
+
+- Só a linha **8.4** foi medida (9.7 LTS e 8.0.46 continuam sem ambiente, B-01).
+- Foram exercitados apenas o `sql_mode` padrão, `NO_BACKSLASH_ESCAPES` e `ANSI_QUOTES`; `PIPES_AS_CONCAT` e outros não.
+- Rotinas/DELIMITER ficam **bloqueados** no MVP: o spike prova que enviar o corpo inteiro funciona, mas adotar isso exige suportar `DELIMITER` e é decisão humana (registrada no ADR 0013).
+- Estado da transação após erro no meio do lote não foi medido — S04.
+- Nenhuma regra do ADR 0013 foi aplicada em código; só o spike as demonstra.

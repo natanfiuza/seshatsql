@@ -1,5 +1,5 @@
 # Plano — Etapa 0 (preparação técnica controlada)
-Data: 2026-10-29 · Branch: `main` · Pasta: `main` (movido de `local` após a criação do repositório) · Status: **T00, T01, S01 e S02 executados** — typecheck, lint, unitários, build, e2e e dev verificados com exit 0; lockfile **aguardando aprovação** (mudou com `typescript-eslint`); S01 e S02 medidos contra MySQL 8.4.13 (ADR 0011 e 0012 propostos); S03–S04 **não** iniciados
+Data: 2026-10-29 · Branch atual: `develop_natan` · Pasta: `main` (criada antes da branch atual e mantida para não quebrar os links das etapas anteriores) · Status: **T00, T01, S01, S02 e S03 executados** — typecheck, lint, unitários, build, e2e e dev verificados com exit 0; lockfile **aguardando aprovação** (mudou com `typescript-eslint`); S01–S03 medidos contra MySQL 8.4.13 (ADR 0011, 0012 e 0013 propostos); S04 **não** iniciado
 
 > **Nota:** o diretório virou repositório Git durante a sessão (commit `a44d40b`, branch `main`, remoto `natanfiuza/seshatsql`, sincronizado), sem ação do agente. Ver §0 do survey.
 
@@ -161,6 +161,29 @@ Números centrais: 300.000 linhas bufferizadas = 45 MB (~157 B/linha); 2.000.000
 Conclusão de desenho: **o teto de memória deve ser por bytes retidos, não por linhas** — daí a proposta de 1.000 linhas **e** 64 MB por conjunto (ADR 0012).
 
 Não medido: cancelamento e `KILL QUERY` (S04); parser (S03); linhas 9.7 e 8.0.46.
+
+### S03 — divisão de SQL e fallback (executado em 2026-10-30)
+
+| Item | Resultado |
+|---|---|
+| Gerador | `spikes/s03-splitter.mjs` — tokenizador por estado + corpus de 28 entradas |
+| Verificação | **0 falhas** em 28 casos / 38 execuções individuais no servidor |
+| Evidência | `docs/spikes/20261029_s03-sql-splitting-evidence.md` (10.030 caracteres) |
+| Decisão proposta | `docs/adr/0013-splitter-e-fallback.md` — status **proposto** |
+
+Fatos que mudam o desenho do pipeline:
+
+1. **`split(';')` erra em 11 de 28 casos** — a divisão é nossa porque `multipleStatements: false` faz o driver recusar lotes (`ER_PARSE_ERROR/1064`).
+2. **`--` só é comentário com espaço/controle** (`SELECT 1--2` = `3`); `/*!` e `/*+` são executáveis e **não** podem ser descartados — o bug inicial engolia `/*!40101 SET @x = 1 */;` inteiro.
+3. **Rotina não é divisível:** o corpo `BEGIN ... END` vira 3 fragmentos. Política proposta: bloquear o **lote** com `routine-body`/`delimiter-command`. Sonda adicional provou que o corpo **inteiro** é aceito pelo servidor (alternativa registrada, não adotada no MVP).
+4. **`sql_mode` altera a divisão** (`NO_BACKSLASH_ESCAPES`, `ANSI_QUOTES`) — o splitter precisa do modo da sessão e de reanálise após `SET sql_mode`.
+5. **Conclusão de desenho:** segurança é **por lote**, não por comando; parser inconclusivo bloqueia com aviso, sem prometer segurança.
+
+Correções de processo no S03: expectativas do corpus ajustadas à evidência (rotina gera 3 fragmentos, não 1); seção de `sql_mode` passou a aplicar o modo por linha; regex de `--` reescrita de bytes de controle literais para `[\s\x00-\x1f]`; helper não usado removido. `npm run lint` final: **exit 0**.
+
+Não medido: cancelamento/estado de transação após erro (S04); `sql_mode` além de padrão, `NO_BACKSLASH_ESCAPES` e `ANSI_QUOTES`; linhas 9.7 e 8.0.46.
+
+**Retomada:** `docs/plans/develop_natan/20261029_retomada-s04_plansfacts.md` — estado ao fim do S03 e o passo a passo do próximo estágio.
 
 ## Bloqueios **[B]**
 
