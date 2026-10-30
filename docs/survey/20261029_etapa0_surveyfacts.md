@@ -404,3 +404,52 @@ Autorizado pelo usuário ("continue"). Escopo: divisão de lotes, `sql_mode`, ro
 - Rotinas/DELIMITER ficam **bloqueados** no MVP: o spike prova que enviar o corpo inteiro funciona, mas adotar isso exige suportar `DELIMITER` e é decisão humana (registrada no ADR 0013).
 - Estado da transação após erro no meio do lote não foi medido — S04.
 - Nenhuma regra do ADR 0013 foi aplicada em código; só o spike as demonstra.
+
+## 12. T02 — spike S04 de sessão, cancelamento e `unknown` (2026-10-30)
+
+Autorizado pelo usuário ("continue"), depois da rodada de grill registrada em `docs/plans/develop_natan/20261030_s04_sessao_e_cancelamento_plansfacts.md` e `docs/survey/20261030_s04_sessao_e_cancelamento_surveyfacts.md` (decisões D-S04-01…05, todas confirmadas).
+
+### 12.1 Ambiente e método
+
+- Mesmo servidor: MySQL **8.4.13** em `127.0.0.1:3307`, schema descartável `seshat_spike`, `mysql2` com `multipleStatements: false`.
+- Gerador: `spikes/s04-sessao.mjs` — 12 experimentos, conexão principal + conexão auxiliar de controle, tabela `s04_tx` recriada a cada execução.
+- Evidência: `docs/spikes/20261030_s04-session-cancel-evidence.md` — **12 experimentos, 0 falhas de verificação**.
+- Alvo de cancelamento: consulta real `SELECT COUNT(*) FROM vol a JOIN vol b ON b.id = a.id` (~5 s com a tabela do S02), não `SLEEP`.
+
+### 12.2 Resultados medidos
+
+| Aspecto | Resultado observado |
+|---|---|
+| `KILL QUERY` durante consulta real | cliente recebe `ER_QUERY_INTERRUPTED/1317/70100` em **1 ms**; conexão continua utilizável |
+| `SELECT SLEEP(n)` interrompido | devolve **sucesso com 1** — `SLEEP` interrompido não gera erro; não serve como prova de cancelamento |
+| Transação após `KILL QUERY` | continua **aberta** (`INNODB_TRX` = 1); `ROLLBACK` posterior desfaz o `INSERT` |
+| `KILL CONNECTION` | `PROTOCOL_CONNECTION_LOST`; conexão morta; servidor desfaz a transação |
+| `destroy()` com comando em voo | sessão **segue viva**; o comando termina (~4,9 s) e o cliente recebe sucesso; a thread só sai depois |
+| `destroy()` com a conexão ociosa | thread sai da `PROCESSLIST` em 1 ms; transação desfeita |
+| `INNODB_TRX` | mostra a transação com escrita e a de leitura; **leitura imediata pode vir defasada** (`1, 0, 0` após rollback; `0, 1, 1` ao abrir a de leitura) |
+| `INNODB_TRX` com usuário só `SELECT` | `ER_SPECIFIC_ACCESS_DENIED_ERROR/1227/42000` — exige o privilégio `PROCESS` |
+| DDL no meio da transação | `CREATE`, `ALTER`, `TRUNCATE`, `RENAME` fizeram **commit implícito** nos 4 casos |
+| `LOCK TABLES ... WRITE` | bloqueia outra sessão (>1,5 s); commita a transação aberta; `BEGIN` depois do lock **libera** o lock; `UNLOCK TABLES` **não** commita a transação iniciada depois |
+| Dois comandos na mesma conexão | o `mysql2` **enfileira** (segundo esperou 1010 ms) |
+| `KILL` entre usuários | usuário só com `SELECT` cancela a própria thread; na thread do `root` recebe `ER_KILL_DENIED_ERROR/1095/HY000` |
+| Queda durante o `COMMIT` | corrida **não reproduzida** em 4 tentativas — registrado como tentado, não como medido |
+
+### 12.3 Correções feitas durante o spike
+
+- **`SELECT SLEEP` não prova cancelamento:** as três primeiras falhas de verificação vinham de medir cancelamento com `SLEEP`, que interrompido devolve 1 sem erro. Todos os testes passaram a usar uma consulta real sobre `vol`.
+- **`INNODB_TRX` defasado:** a medição "sem transação" retornava 1 logo após o `ROLLBACK`. A leitura passou a repetir até duas leituras consecutivas concordarem (teto de 2 s), e o spike registra as leituras obtidas.
+- **Expectativa errada sobre `UNLOCK TABLES`:** a primeira versão esperava commit; a medição mostrou que, com a transação começando **depois** do `LOCK` (e o `BEGIN` liberando o lock), o `UNLOCK` não commita nada. A expectativa foi corrigida para o comportamento medido e a divergência com a documentação do MySQL ficou registrada na evidência.
+- **`destroy()` não encerra sessão com comando em voo:** a seção 8 foi reescrita para medir os dois casos (comando em voo e conexão ociosa) em vez de afirmar "queda desfaz a transação" a partir de uma leitura que só provava isolamento.
+- Lint final: **exit 0**; o spike de diagnóstico `_probe-s04.mjs` foi removido.
+
+### 12.4 Decisão proposta (ADR 0014)
+
+`docs/adr/0014-cancelamento-e-sessao.md` — status **proposto**: cancelar = `KILL QUERY` e a conexão permanece (cancelar ≠ rollback); servidor (`INNODB_TRX`) como verdade com leitura estabilizada e rastreio do cliente como desempate; `unknown` bloqueia escrita e DDL e nunca reenvia SQL; DDL e `LOCK TABLES` em transação aberta pedem confirmação; encerrar sessão de verdade é `KILL CONNECTION`, não `destroy()`; uma execução ativa é imposta pelo aplicativo.
+
+### 12.5 Limitações
+
+- Só a linha **8.4** foi medida (9.7 LTS e 8.0.46 seguem sem ambiente, B-01).
+- Sem `PROCESS`, a "verdade do servidor" da D-S04-02 não está disponível; a política passa a depender do rastreio do cliente.
+- O comportamento de `destroy()` foi medido no `mysql2` 3.24.6; a causa (driver ou protocolo) não foi isolada.
+- A corrida "queda durante o `COMMIT`" não foi reproduzida: o estado `unknown` é política, não resultado medido.
+- Nenhuma regra do ADR 0014 foi aplicada em código; só o spike as demonstra.
