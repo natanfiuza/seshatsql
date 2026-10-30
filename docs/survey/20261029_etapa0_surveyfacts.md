@@ -1,5 +1,5 @@
 # Survey — Etapa 0 (preparação técnica controlada)
-Data: 2026-10-29 · Branch: `main` · Status: relatório entregue, aguardando revisão antes de T00
+Data: 2026-10-29 · Branch: `main` · Status: Etapa 0 entregue; **T00 e T01 executados** (§7 e §8); revisão do lockfile pendente; T02 não iniciado
 
 ## 0. Alteração de estado durante a sessão
 
@@ -213,3 +213,56 @@ Autorizada pelo usuário na revisão da Etapa 0 ("continue"). Escopo: criar `pac
 2. Electron 45 removeu shims de Node no preload sandboxed (`Buffer`, `events`, `timers`, `url`, `setImmediate`) — o preload deve usar apenas `contextBridge`/`ipcRenderer`.
 3. electron-builder 26 não declara suporte a Electron 45.
 4. Monaco workers + CSP sob Vite 8/rolldown ainda não demonstrados (gate S05).
+
+## 8. T01 — scaffold Electron/Vue/TS (2026-10-29)
+
+Autorizado pelo usuário na revisão de T00 ("continue"). Escopo: configuração, scaffold mínimo e scripts. **Nenhuma funcionalidade de produto** foi implementada — sem banco, sem IPC de consulta, sem Monaco, sem grid.
+
+### 8.1 Arquivos criados
+
+| Arquivo | Papel |
+|---|---|
+| `electron.vite.config.ts` | `externalizeDepsPlugin` em main/preload; plugin Vue no renderer; layout padrão (`src/main`, `src/preload`, `src/renderer`) |
+| `tsconfig.json` / `tsconfig.node.json` / `tsconfig.web.json` | dois projetos separados; `typecheck` usa `-p` explícito (nunca `tsc -b`) |
+| `eslint.config.mjs` | flat config: `typescript-eslint` + `eslint-plugin-vue` (`flat/recommended`) |
+| `vitest.config.mts` | unitários em `tests/unit`, ambiente `node` |
+| `playwright.config.ts` | e2e em `tests/e2e`, 1 worker |
+| `src/domain/app-info.ts` | `PRODUCT_NAME` puro, sem Node/Electron/Vue |
+| `src/main/index.ts` | `BrowserWindow` com `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`; bloqueia `window.open` e navegação |
+| `src/preload/index.ts` + `api.ts` | `contextBridge` expondo apenas `{ productName }` congelado; sem `invoke` genérico |
+| `src/renderer/index.html` | CSP provisória + `<div id="app">` |
+| `src/renderer/src/{main.ts, env.d.ts, styles/base.css}` | bootstrap do Vue |
+| `src/renderer/src/ui/App.vue` | placeholder localizado |
+| `src/renderer/src/i18n/**` | `vue-i18n` com os cinco idiomas de R22: en-US (padrão), pt-BR, pt-PT, fr, es |
+| `tests/unit/{app-info,i18n-catalog}.test.ts` | smoke de domínio + paridade de chaves entre os catálogos |
+| `tests/e2e/app.spec.ts` | abre o app compilado e confere o título |
+
+### 8.2 Decisões tomadas em T01
+
+1. **Main/preload em CJS** — `package.json` sem `"type": "module"`. Verificado no próprio `electron-vite@6.0.0` (`lib-DoUt4oMD.js:348`): `format = pkg.type === 'module' && supportESM() ? 'es' : 'cjs'`. Preload sandboxed do Electron não aceita ESM, então CJS é obrigatório aqui. Confirmado no artefato: `out/main/index.js` e `out/preload/index.js` usam `require`.
+2. **`typescript-eslint@8.72.1` adicionado** (MIT; peer `typescript >=4.8.4 <6.1.0`, satisfeito pelo 6.0.3). Motivo: o ESLint 10.13.0 só traz o parser JavaScript (`lib/languages/js`); `eslint .` sobre `.ts` falharia sem esse pacote. **É a única dependência fora da matriz aprovada** — registrada em `docs/03`.
+3. **`Messages` é alias de tipo, não `interface`** — o `vue-i18n` exige assinatura de índice implícita, que o TypeScript só infere para aliases. Foi o único erro de tipo encontrado (`TS2769`).
+4. **CSP provisória** em `index.html`: `default-src 'self'`, `style-src 'self' 'unsafe-inline'`, `connect-src 'self' ws://localhost:*`. O `ws://localhost:*` existe só para o HMR do dev server; o endurecimento definitivo depende do S05 (Monaco workers).
+5. `vitest.config.ts` renomeado para **`.mts`**: o Vite 8 avisou que ESM em arquivo carregado como CJS quebrará com `configLoader: 'native'`.
+
+### 8.3 Verificação executada
+
+| Verificação | Comando | Resultado |
+|---|---|---|
+| Tipos (main/preload/domínio/testes) | `npm run typecheck:node` | **exit 0** |
+| Tipos (renderer/Vue) | `npm run typecheck:web` | **exit 0** (após corrigir §8.2-3) |
+| Lint | `npm run lint` | **exit 0** — 0 erros, 0 avisos |
+| Unitários | `npm run test` | **2 arquivos, 6 testes, todos passando** |
+| Build | `npm run build` | **exit 0** — `out/main/index.js` 1,31 kB · `out/preload/index.js` 0,17 kB · `out/renderer/assets/index-*.js` 287,61 kB · CSS 0,42 kB |
+| E2E | `npm run test:e2e` | **1 teste, 1 passed (4,5 s)** — app compilado abre e o `h1` renderiza "SeshatSQL" |
+| Dev | `npm run dev` | servidor em `http://localhost:5173`; janela Electron com título **SeshatSQL** aberta; nenhum erro no log; processos encerrados após o teste |
+| Lockfile em sincronia | `npm ci --dry-run` | **exit 0** |
+
+`ELECTRON_RUN_AS_NODE` foi removido do ambiente de todas essas execuções (ver §7.3). Sem isso o Electron roda como Node e a janela não abre.
+
+### 8.4 Limitações conhecidas
+
+- `dist:win` **não foi executado** e não pode ser: depende de `electron-builder.yml`, que depende de publisher/B-03 e entra em T13.
+- `npm ci` integral **não foi executado**; só `--dry-run`. O lockfile mudou depois da aprovação de T00 (entrada do `typescript-eslint`), então a revisão do lockfile continua pendente.
+- Não há IPC de consulta, driver, parser, Monaco nem grid. `preload` expõe apenas uma constante.
+- A janela não tem menu customizado, tema nem persistência — T11 e adiante.

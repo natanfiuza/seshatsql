@@ -19,3 +19,7 @@ Todos os itens começam NÃO INICIADO. Executar somente item/etapa autorizada. A
 | T14 | Revisão release/documentação/licenças | T13 | checklist auditado e aceite humano; não publicar automaticamente |
 ## Modelo de tarefa
 Objetivo; requisitos Rxx; dependências/pendências; escopo/exclusões; arquivos reais; passos; testes positivos/negativos; evidência; riscos/condição de parada; docs alterados. Não implementar mais de uma etapa autorizada para adiantar trabalho.
+## Status em 2026-10-29
+T00 concluído: versões exatas fixadas, lockfile gerado, mapa de licenças levantado (zero copyleft).
+T01 concluído: scaffold Electron/Vue/TS com scripts; typecheck, lint, 6 testes unitários, build, 1 teste e2e e a janela em modo dev verificados com exit 0. Preload expõe apenas uma constante; sem IPC de consulta.
+T02 não iniciado: depende de ambiente para as linhas 9.7 LTS e 8.0.46 (MySQL 8.4.13 já disponível em 127.0.0.1:3307) e de autorização do usuário.
