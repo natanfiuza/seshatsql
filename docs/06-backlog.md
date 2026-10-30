@@ -22,4 +22,4 @@ Objetivo; requisitos Rxx; dependências/pendências; escopo/exclusões; arquivos
 ## Status em 2026-10-29
 T00 concluído: versões exatas fixadas, lockfile gerado, mapa de licenças levantado (zero copyleft).
 T01 concluído: scaffold Electron/Vue/TS com scripts; typecheck, lint, 6 testes unitários, build, 1 teste e2e e a janela em modo dev verificados com exit 0. Preload expõe apenas uma constante; sem IPC de consulta.
-T02 não iniciado: depende de ambiente para as linhas 9.7 LTS e 8.0.46 (MySQL 8.4.13 já disponível em 127.0.0.1:3307) e de autorização do usuário.
+T02 iniciado: **S01 executado** contra MySQL 8.4.13 (127.0.0.1:3307). Evidência em `docs/spikes/20261029_s01-driver-evidence.md`; ADR 0011 **proposto** (mysql2 com `supportBigNumbers`, `bigNumberStrings`, `dateStrings`, `multipleStatements: false`). S02–S04 não iniciados; 9.7 LTS e 8.0.46 continuam sem ambiente, então o ADR não é definitivo.
