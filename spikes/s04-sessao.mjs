@@ -1,22 +1,23 @@
 /**
- * Spike S04 — sessão, cancelamento e estado `unknown`.
+ * Spike S04 — session, cancellation, and `unknown` state.
  *
- * Uso (PowerShell):
+ * Usage (PowerShell):
  *   $env:SESHAT_DB_PASSWORD = '<senha>'
  *   node spikes/s04-sessao.mjs docs/spikes/20261030_s04-session-cancel-evidence.md
  *
- * Mede o que acontece com a sessão de trabalho quando o comando é cancelado
- * (`KILL QUERY`), quando a conexão é encerrada (`KILL CONNECTION`/`destroy()`),
- * quando um DDL aparece no meio de uma transação e quando não há resposta.
+ * Measures what happens to the working session when the command is cancelled
+ * (`KILL QUERY`), when the connection is closed (`KILL CONNECTION`/`destroy()`),
+ * when a DDL statement shows up in the middle of a transaction, and when there is
+ * no response.
  *
- * Decisões que este spike precisa sustentar (plano 20261030):
- *   D-S04-01 cancelar mantém a conexão; cancelar ≠ rollback
- *   D-S04-02 INNODB_TRX como verdade do estado transacional
- *   D-S04-03 falta de resposta = `unknown`, sem repetir SQL
- *   D-S04-04 DDL em transação aberta faz commit implícito
+ * Decisions this spike must support (plan 20261030):
+ *   D-S04-01 cancelling keeps the connection; cancelling is not rollback
+ *   D-S04-02 INNODB_TRX as the truth of the transactional state
+ *   D-S04-03 no response = `unknown`, without resending SQL
+ *   D-S04-04 DDL in an open transaction causes an implicit commit
  *
- * A senha nunca é impressa nem gravada: vem só de variável de ambiente.
- * Schema de trabalho: `seshat_spike` (descartável, dados sintéticos).
+ * The password is never printed or written: it comes only from an environment variable.
+ * Working schema: `seshat_spike` (disposable, synthetic data).
  */
 import mysql from 'mysql2'
 import { randomBytes } from 'node:crypto'
@@ -32,12 +33,12 @@ const OUT = process.argv[2] ?? 'docs/spikes/20261030_s04-session-cancel-evidence
 const TEMP_USER = 'seshat_s04_ro'
 
 if (!PASSWORD) {
-  console.error('SESHAT_DB_PASSWORD não definido')
+  console.error('SESHAT_DB_PASSWORD is not set')
   process.exit(1)
 }
 
 // ---------------------------------------------------------------------------
-// Infraestrutura do spike
+// Spike infrastructure
 // ---------------------------------------------------------------------------
 
 const connect = (options = {}) =>
@@ -53,7 +54,7 @@ const connect = (options = {}) =>
       multipleStatements: false,
       ...options
     })
-    // conexão derrubada por KILL/destroy emite 'error'; sem listener o processo cai
+    // a connection dropped by KILL/destroy emits 'error'; without a listener the process crashes
     connection.on('error', () => undefined)
     connection.connect((error) => (error ? reject(error) : resolve(connection)))
   })
@@ -92,7 +93,7 @@ function check(label, actual, expected) {
 const ms = (start) => Math.round(performance.now() - start)
 
 // ---------------------------------------------------------------------------
-// Preparação
+// Preparation
 // ---------------------------------------------------------------------------
 
 let aux = await connect()
@@ -110,10 +111,10 @@ let main = await connect({ database: SCHEMA })
 const rawTrxCount = async (id) =>
   num((await q(aux, `SELECT COUNT(*) AS c FROM information_schema.INNODB_TRX WHERE trx_mysql_thread_id = ${id}`)).rows[0].c)
 
-// A leitura de INNODB_TRX pode vir defasada logo depois de COMMIT/ROLLBACK: a
-// primeira consulta logo após o rollback ainda mostrou a transação (medido neste
-// spike). Por isso a medição repete até duas leituras consecutivas concordarem,
-// com teto de 2 s — e registra as leituras obtidas.
+// INNODB_TRX reads can lag right after COMMIT/ROLLBACK: the first query right
+// after the rollback still showed the transaction (measured in this spike). That is
+// why the measurement repeats until two consecutive reads agree, capped at 2 s —
+// and records every read it got.
 const trxCountFor = async (id) => {
   const samples = [await rawTrxCount(id)]
   const started = performance.now()
@@ -131,13 +132,13 @@ const trxText = (reading) =>
 
 const rowExists = async (id) => num((await q(aux, `SELECT COUNT(*) AS c FROM s04_tx WHERE id = ${id}`)).rows[0].c) === 1
 
-// `SELECT SLEEP(n)` não serve como alvo de cancelamento: interrompido, o servidor
-// devolve sucesso com 1 em vez de erro (medido neste spike). O alvo é uma consulta
-// real sobre `vol` (S02), dimensionada para durar ~2 s.
+// `SELECT SLEEP(n)` is useless as a cancellation target: when interrupted, the server
+// returns success with 1 instead of an error (measured in this spike). The target is
+// a real query over `vol` (S02), sized to last ~2 s.
 const slowSql = (bound = 2000000) => `SELECT COUNT(*) AS c FROM vol a JOIN vol b ON b.id = a.id WHERE a.id < ${bound}`
 
-// Dispara a consulta lenta, cancela 500 ms depois e devolve tudo o que foi medido.
-// Se a consulta terminar antes do kill (máquina mais rápida), dobra o escopo e tenta de novo.
+// Fires the slow query, cancels it 500 ms later, and returns everything that was measured.
+// If the query finishes before the kill (a faster machine), doubles the scope and tries again.
 const runKilled = async (killStatement, bound = 2000000) => {
   let current = bound
   for (let attempt = 1; attempt <= 2; attempt += 1) {
@@ -203,7 +204,7 @@ if (!hasVol) {
 } else {
   const id = await mainId()
 
-  // `SLEEP` antes de tudo: mostrar por que ele não serve como alvo de cancelamento.
+  // `SLEEP` first: show why it is useless as a cancellation target.
   const sleeping = settle(q(main, 'SELECT SLEEP(3) AS s'))
   await wait(300)
   const sleepKill = await settle(q(aux, `KILL QUERY ${id}`))
@@ -358,20 +359,20 @@ say()
 say('## 7. `LOCK TABLES` e `UNLOCK TABLES`')
 say()
 {
-  // (1) o lock WRITE bloqueia outra sessão?
+  // (1) does the WRITE lock block another session?
   await q(aux, 'DELETE FROM s04_tx WHERE id IN (405, 406)')
   await q(main, 'LOCK TABLES s04_tx WRITE')
   const blocked = await withTimeout(settle(q(aux, 'SELECT COUNT(*) AS c FROM s04_tx')), 1500)
   const lockBlocks = Boolean(blocked.timedOut)
 
-  // (2) começar uma transação depois do LOCK libera o lock?
+  // (2) does starting a transaction after the LOCK release the lock?
   await q(main, 'BEGIN')
   const afterBegin = await withTimeout(settle(q(aux, 'SELECT COUNT(*) AS c FROM s04_tx')), 1500)
   const releasedByBegin = !afterBegin.timedOut
   await q(main, 'UNLOCK TABLES')
   await q(main, 'ROLLBACK')
 
-  // (3) LOCK TABLES no meio da transação: commita?
+  // (3) LOCK TABLES in the middle of a transaction: does it commit?
   await q(main, 'BEGIN')
   await q(main, 'INSERT INTO s04_tx VALUES (405)')
   await q(main, 'LOCK TABLES s04_tx READ')
@@ -379,7 +380,7 @@ say()
   const rollback = await settle(q(main, 'ROLLBACK'))
   const committedByLock = await rowExists(405)
 
-  // (4) UNLOCK TABLES commita a transação iniciada depois do LOCK?
+  // (4) does UNLOCK TABLES commit the transaction started after the LOCK?
   await q(main, 'LOCK TABLES s04_tx WRITE')
   await q(main, 'BEGIN')
   await q(main, 'INSERT INTO s04_tx VALUES (406)')
@@ -418,7 +419,7 @@ say()
     return { gone: false, afterMs: timeoutMs }
   }
 
-  // (a) destroy() com um comando em voo
+  // (a) destroy() with an in-flight command
   const busyId = await mainId()
   await q(main, 'BEGIN')
   await q(main, 'INSERT INTO s04_tx VALUES (301)')
@@ -434,7 +435,7 @@ say()
   const goneAfterCommand = await waitGone(busyId)
   const survivedBusy = await rowExists(301)
 
-  // (b) destroy() com a conexão ociosa e transação aberta
+  // (b) destroy() with an idle connection and an open transaction
   main = await connect({ database: SCHEMA })
   const idleId = await mainId()
   await q(main, 'BEGIN')
@@ -588,7 +589,7 @@ say()
 }
 
 // ---------------------------------------------------------------------------
-// Limpeza e relatório
+// Cleanup and report
 // ---------------------------------------------------------------------------
 
 for (const table of ['s04_ddl_a', 's04_ddl_b', 's04_rn_b', 's04_trunc']) {
@@ -622,6 +623,6 @@ main.destroy()
 aux.destroy()
 
 writeFileSync(OUT, lines.join('\n') + '\n', 'utf8')
-console.log(`relatório gravado em ${OUT} (${lines.join('\n').length} caracteres)`)
-console.log(`falhas de verificação: ${failures.length}`)
+console.log(`report written to ${OUT} (${lines.join('\n').length} characters)`)
+console.log(`verification failures: ${failures.length}`)
 process.exit(failures.length > 0 ? 1 : 0)

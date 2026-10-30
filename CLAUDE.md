@@ -13,6 +13,9 @@ Não usar split(';'). Não reexecutar SQL arbitrário para contar; não alterar 
 Lote aprovado é snapshot imutável de SQL e contexto; alteração exige nova análise/confirmação. Parser inconclusivo gera aviso e confirmação, sem falsa garantia de segurança.
 Não repetir SQL após falha de rede. Não COMMIT silencioso. Cancelar não equivale a rollback global. Não prometer rollback de DDL.
 Senhas só cifradas pelo SO, sem fallback em claro. SQL legível no YAML permitido, não em logs por padrão. YAML validado, versionado, recuperação sem descarte silencioso.
+Todo código gerado é escrito em inglês: identificadores (variáveis, funções, classes, tipos), comentários, doc comments e nomes de teste. Texto exibido ao usuário vem dos catálogos de i18n (en-US padrão, pt-BR, pt-PT, fr, es), nunca fixo no código. Documentação, evidências e mensagens de produto em português permanecem em português.
+
 ## Tarefas e encerramento
 Cada tarefa informa objetivo, dependências, critérios de aceite, testes, riscos e condições de parada. Mudança em dependência exige licença/versão registradas. npm ci só depois de lockfile aprovado.
 Teste destrutivo apenas em banco descartável autorizado; nunca usar perfis reais do usuário. Entregar diff, comandos/resultados, pendências e documentos atualizados, então aguardar revisão.
+- Ao finalizar qualquer tarefa, gerar relatório detalhado em `docs/claude-code/reports/{branch}/{dataatual}_{taskname}.md`, onde {dataatual} deve ser substituida pelo data atual, e onde {branch} deve ser substituida pela branch atual, onde {taskname} deve ser uma descricao curta da tarefa, sem espaços ou caracteres especiais, apenas letras minusculas, separados por underscore.

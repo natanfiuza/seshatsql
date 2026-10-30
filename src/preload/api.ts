@@ -1,7 +1,7 @@
 /**
- * Superfície exposta pelo preload ao renderer.
- * Só entram aqui métodos nomeados e validados; nunca um invoke genérico,
- * objetos de driver ou credenciais.
+ * Surface exposed by the preload to the renderer.
+ * Only named, validated methods belong here; never a generic invoke,
+ * driver objects, or credentials.
  */
 export interface SeshatApi {
   readonly productName: string

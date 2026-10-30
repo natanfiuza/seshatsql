@@ -15,16 +15,16 @@ function keysOf(value: object, prefix = ''): string[] {
 
 const reference = keysOf(enUS).sort()
 
-describe('catálogos de idioma', () => {
+describe('locale catalogs', () => {
   const catalogs = { 'pt-BR': ptBR, 'pt-PT': ptPT, fr, es }
 
   for (const [locale, catalog] of Object.entries(catalogs)) {
-    it(`${locale} tem as mesmas chaves de en-US`, () => {
+    it(`${locale} has the same keys as en-US`, () => {
       expect(keysOf(catalog).sort()).toEqual(reference)
     })
   }
 
-  it('não deixa mensagem vazia', () => {
+  it('does not leave any message empty', () => {
     for (const [locale, catalog] of Object.entries({ 'en-US': enUS, ...catalogs })) {
       for (const key of keysOf(catalog)) {
         const parts = key.split('.')

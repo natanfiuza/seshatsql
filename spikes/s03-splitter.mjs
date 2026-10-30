@@ -1,16 +1,16 @@
 /**
- * Spike S03 — splitter de SQL e política de fallback.
+ * Spike S03 — SQL splitter and fallback policy.
  *
- * Uso (PowerShell):
+ * Usage (PowerShell):
  *   $env:SESHAT_DB_PASSWORD = '<senha>'
  *   node spikes/s03-splitter.mjs docs/spikes/20261029_s03-sql-splitting-evidence.md
  *
- * Regra do projeto: NUNCA usar split(';'). Este spike implementa um tokenizador
- * mínimo (strings, comentários, backticks) e mede onde ele é confiável e onde
- * precisa recusar. Nada aqui vira código de produção sem decisão humana (ADR 0013).
+ * Project rule: NEVER use split(';'). This spike implements a minimal tokenizer
+ * (strings, comments, backticks) and measures where it is reliable and where it
+ * must refuse. Nothing here becomes production code without a human decision (ADR 0013).
  *
- * A senha nunca é impressa nem gravada: vem só de variável de ambiente.
- * Schema de trabalho: `seshat_spike` (descartável, dados sintéticos).
+ * The password is never printed or written: it comes only from an environment variable.
+ * Working schema: `seshat_spike` (disposable, synthetic data).
  */
 import mysql from 'mysql2'
 import { writeFileSync } from 'node:fs'
@@ -23,12 +23,12 @@ const SCHEMA = 'seshat_spike'
 const OUT = process.argv[2] ?? 'docs/spikes/20261029_s03-sql-splitting-evidence.md'
 
 if (!PASSWORD) {
-  console.error('SESHAT_DB_PASSWORD não definido')
+  console.error('SESHAT_DB_PASSWORD is not set')
   process.exit(1)
 }
 
 // ---------------------------------------------------------------------------
-// Splitter — máquina de estados por caractere
+// Splitter — per-character state machine
 // ---------------------------------------------------------------------------
 
 const hasMode = (sqlMode, name) => new RegExp(`(^|,)${name}(,|$)`, 'i').test(sqlMode ?? '')
@@ -92,7 +92,7 @@ const ROUTINE_DDL =
 
 function classify(text) {
   let head = stripLeadingComments(text).trim()
-  // Comentário executável: classifica pelo conteúdo interno, não pelo wrapper.
+  // Executable comment: classify by the inner content, not by the wrapper.
   const executable = head.match(/^\/\*!\d*\s*([\s\S]*?)\*\/\s*/)
   if (executable) head = executable[1].trim()
   const word = (head.match(/^[A-Za-z]+/) ?? [])[0]
@@ -154,8 +154,8 @@ function splitSql(text, options = {}) {
         state = 'lineComment'
         i += 2
       } else if (c === '/' && text[i + 1] === '*') {
-        // /*! ... */ é comentário executável e /*+ ... */ é hint: contam como
-        // conteúdo, porque o servidor executa o que está dentro.
+        // /*! ... */ is an executable comment and /*+ ... */ is a hint: both count as
+        // content, because the server executes what is inside them.
         if (text[i + 2] === '!' || text[i + 2] === '+') sawContent = true
         state = 'blockComment'
         i += 2
@@ -211,12 +211,12 @@ function splitSql(text, options = {}) {
   if (openState) problems.push(`unbalanced-${openState}`)
   if (state === 'blockComment') problems.push('unbalanced-comment')
 
-  // Problemas de lote: tornam o lote inteiro inexecutável, não só um pedaço.
+  // Batch problems: they make the whole batch non-executable, not just one piece.
   if (statements.some((s) => /^DELIMITER\b/i.test(stripLeadingComments(s.text).trim()))) {
     problems.push('delimiter-command')
   }
-  // Definição de rotina é excluída do MVP. A detecção é textual e conservadora:
-  // falso positivo bloqueia o lote com aviso, nunca executa às cegas.
+  // Routine definitions are excluded from the MVP. Detection is textual and conservative:
+  // a false positive blocks the batch with a warning; it never runs blindly.
   if (/(CREATE|ALTER)\s+(DEFINER\s*=\s*(?:\S+|`[^`]*`)(?:@(?:\S+|`[^`]*`))?\s+)?(PROCEDURE|FUNCTION|TRIGGER|EVENT)\b/i.test(text)) {
     problems.push('routine-body')
   }
@@ -248,7 +248,7 @@ const conn = await mysql.createConnection({
   dateStrings: true,
   multipleStatements: false
 })
-conn.on('error', (error) => console.error(`conexão reportou erro: ${error.code ?? error.message}`))
+conn.on('error', (error) => console.error(`connection reported an error: ${error.code ?? error.message}`))
 
 const q = (sql) =>
   new Promise((resolve, reject) => {
@@ -289,7 +289,7 @@ say(`- \`NO_BACKSLASH_ESCAPES\` ativo: **${hasMode(sqlMode, 'NO_BACKSLASH_ESCAPE
 say(`- \`ANSI_QUOTES\` ativo: **${hasMode(sqlMode, 'ANSI_QUOTES')}** → aspas duplas ${hasMode(sqlMode, 'ANSI_QUOTES') ? 'são identificador' : 'são string'}`)
 say()
 
-// preparação idempotente do schema
+// idempotent schema preparation
 await q(`CREATE DATABASE IF NOT EXISTS ${SCHEMA}`)
 await q(`USE ${SCHEMA}`)
 await q('CREATE TABLE IF NOT EXISTS s03_probe (id INT NOT NULL PRIMARY KEY) ENGINE=InnoDB')
@@ -615,8 +615,8 @@ say('4. O `sql_mode` da sessão altera a divisão; mudanças de modo no meio do 
 say('5. O driver recusa o lote inteiro; a divisão correta é condição para executar qualquer lote.')
 
 writeFileSync(OUT, lines.join('\n') + '\n', 'utf8')
-console.log(`relatório gravado em ${OUT} (${lines.join('\n').length} caracteres)`)
-console.log(`falhas de verificação: ${failures.length}`)
+console.log(`report written to ${OUT} (${lines.join('\n').length} characters)`)
+console.log(`verification failures: ${failures.length}`)
 
 await conn.end()
 process.exit(failures.length > 0 ? 1 : 0)

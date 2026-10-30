@@ -1,7 +1,7 @@
 /**
- * Estrutura comum a todos os catálogos de mensagem.
- * Precisa ser alias de tipo (não interface): o vue-i18n exige assinatura de índice
- * implícita, que o TypeScript só infere para aliases de tipo.
+ * Shape shared by all message catalogs.
+ * Must be a type alias (not an interface): vue-i18n requires an implicit index
+ * signature, which TypeScript only infers for type aliases.
  */
 export type Messages = {
   app: {
