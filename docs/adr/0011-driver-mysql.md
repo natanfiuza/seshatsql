@@ -34,7 +34,8 @@ multipleStatements: false
 - **Datas chegam como texto do servidor.** Formatação e ordenação passam a ser responsabilidade nossa, e o fuso deixa de ser reinterpretado pelo processo Node — o que também significa que a UI deve deixar claro o fuso da sessão.
 - Parâmetros enviados ao servidor também não podem ser `number` para valores grandes: a camada de execução precisa mandá-los como string.
 - `CALL` exige tratar "N conjuntos + OkPacket" e não pode usar `ROW_COUNT()` como contagem.
-- Continuam **sem evidência** (pendentes de S02–S04): volume/memória, streaming e drain, cancelamento (`KILL QUERY` vs. destruir conexão), estado de transação após falha de rede e permissões. O ADR não deve ser aceito como definitivo antes disso.
+- **S02 confirmou** o desenho de volume: 2.000.000 de linhas em streaming drenam em 1,6 s com heap estável, reter só 1.000 linhas mantém a memória plana e `COUNT(*)` exato custa 64–182 ms — ver `docs/spikes/20261029_s02-volume-evidence.md` e o ADR 0012.
+- Continuam **sem evidência** (pendentes de S03–S04): cancelamento (`KILL QUERY` vs. destruir conexão), estado de transação após falha de rede, permissões e o splitter/parser. O ADR não deve ser aceito como definitivo antes disso.
 
 ## Alternativas
 `mariadb` (não suporta a linha 8.4 com fidelidade) e drivers nativos por linha (custo de manutenção alto para o MVP). Nenhuma foi testada; registradas para não parecer que a escolha foi por omissão.

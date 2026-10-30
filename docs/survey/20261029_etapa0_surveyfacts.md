@@ -1,5 +1,5 @@
 # Survey — Etapa 0 (preparação técnica controlada)
-Data: 2026-10-29 · Branch: `main` · Status: Etapa 0 entregue; **T00, T01 e S01 executados** (§7–§9); revisão do lockfile pendente; S02–S04 não iniciados
+Data: 2026-10-29 · Branch: `main` · Status: Etapa 0 entregue; **T00, T01, S01 e S02 executados** (§7–§10); revisão do lockfile pendente; S03–S04 não iniciados
 
 ## 0. Alteração de estado durante a sessão
 
@@ -308,3 +308,49 @@ Autorizado pelo usuário ("continue"). Escopo: apenas S01 — comportamento do `
 - Não medido em S01 (fica para S02–S04): volume/memória/streaming, cancelamento, estado de transação após falha de rede, permissões.
 - O schema `seshat_spike` permanece no servidor; é descartável e contém apenas dados sintéticos. A senha usada veio por variável de ambiente e **não** foi gravada em arquivo algum (verificado).
 - `npm run lint` passou a cobrir `spikes/` e acusou 5 variáveis não usadas no gerador. Foram corrigidas, o lint voltou a **exit 0** e o spike foi reexecutado com a versão final (exit 0; saída idêntica, 6080 caracteres — só mudou o instante da execução).
+
+## 10. T02 — spike S02 de volume/contagem (2026-10-30)
+
+Autorizado pelo usuário ("continue"). Escopo: volume, memória, streaming/drain, contagem exata e tamanho de célula — sem cancelamento (S04) e sem parser (S03).
+
+### 10.1 Ambiente e método
+
+- Mesmo servidor do S01: MySQL **8.4.13** em `127.0.0.1:3307`, schema descartável `seshat_spike`.
+- Gerador: `spikes/s02-volume.mjs`, executado com `node --expose-gc` para medir memória **após GC forçado**.
+- Dados: tabela sintética `vol` com **2.000.000** de linhas (BIGINT PK, INT, VARCHAR(120)), 130,7 MB em disco. A geração é reaproveitada quando a tabela já tem o total pedido; variável `SESHAT_S02_ROWS` reduz o volume em testes.
+- Evidência: `docs/spikes/20261029_s02-volume-evidence.md`.
+
+### 10.2 Resultados medidos
+
+| Medida | Resultado |
+|---|---|
+| Inserção de 2.000.000 de linhas (10 lotes de 200 mil) | 32,1 s no total |
+| Bufferizar 10 mil / 100 mil / 300 mil linhas | 28 / 88 / 255 ms · Δheap 1,4 / 13,2 / 39,6 MB |
+| Custo por linha retida (bufferizado) | **~130–196 B** |
+| Streaming drenando 2.000.000 de linhas | **1,57 s** · primeira linha em 1 ms · Δheap 0,2 MB · pico de rss 121 MB (lixo de GC) |
+| Streaming retendo 1.000 e drenando o resto | **1,30 s** · Δheap 0,2 MB |
+| Pausar o stream em 1.000 linhas | 9 ms · rss 116 MB com backpressure ativo |
+| `destroy()` no stream e reutilizar a conexão | `SELECT 1` e `COUNT(*)` corretos — **não é garantia contratual**, é comportamento observado do driver |
+| `COUNT(*)` em 2 M linhas | 64–182 ms |
+| `COUNT(*)` com filtro não indexado | 447–561 ms |
+| `LIMIT 1001` | 2 ms |
+| Linha larga: 40 colunas, 10 mil linhas | 3.604 B retidos por linha (payload 2.360 B, overhead 1,53×) |
+| BLOB de 8 MB | fetch em 21–27 ms |
+| BLOB de 70 MB | `ER_NET_PACKET_TOO_LARGE`; servidor encerra a conexão (`ECONNRESET`) |
+
+O aviso `Warning: got packets out of order` no stderr foi **reproduzido isoladamente** e vem apenas da conexão do teste de 70 MB, encerrada pelo servidor — não da conexão principal nem do `destroy()`.
+
+### 10.3 Consequência para o desenho
+
+O que protege a memória não é o número de linhas, é o **total de bytes retidos**: 1.000 linhas largas custam ~3,6 MB, mas 1.000 células de 1 MB custariam 1 GB. Daí o ADR 0012 propor orçamento de **64 MB retidos por conjunto** além do teto de 1.000 linhas.
+
+### 10.4 Decisão proposta (ADR 0012)
+
+`docs/adr/0012-limites-p04.md` — status **proposto**. Valores: 1.000 linhas, 64 MB por conjunto, texto 64 KB por célula, BLOB não renderizado acima de 1 MB (carregado sob demanda até 16 MB), SQL de 1 MB por aba, conexão com timeout de 10 s, execução sem timeout automático, contagem por consulta separada e cancelável.
+
+### 10.5 Limitações
+
+- Só a linha 8.4 foi medida; 9.7 LTS e 8.0.46 continuam sem ambiente (B-01).
+- Cancelamento, `KILL QUERY` e estado de transação após cancelamento **não** foram testados — S04.
+- Os números de tempo dependem do buffer pool (128 MB) e do disco da máquina; servem como ordem de grandeza, não como SLAs.
+- Nenhum valor proposto foi aplicado em código.
