@@ -6,8 +6,17 @@ import ResultGrid from '../../src/renderer/src/grid/ResultGrid.vue'
 import type { GridColumnDescriptor } from '../../src/renderer/src/grid/tsv'
 import { i18n, setLocale } from '../../src/renderer/src/i18n'
 
+interface CapturedColumn {
+  field?: string
+  headerName?: string
+  pinned?: string
+  cellClass?: string
+  valueFormatter?: (params: { value: unknown }) => string
+  valueGetter?: (params: { node: { rowIndex: number } | null }) => unknown
+}
+
 interface CapturedProps {
-  columnDefs: Array<{ field: string; headerName: string; valueFormatter: (params: { value: unknown }) => string }>
+  columnDefs: CapturedColumn[]
   rowData: Array<Record<string, unknown>>
   rowSelection: Record<string, unknown>
   localeText: Record<string, string>
@@ -80,7 +89,7 @@ vi.mock('ag-grid-vue3', async () => {
 })
 
 const columns: readonly GridColumnDescriptor[] = [
-  { field: 'id', header: 'id' },
+  { field: 'id', header: 'id', align: 'right' },
   { field: 'name', header: 'name' }
 ]
 
@@ -120,8 +129,13 @@ describe('ResultGrid', () => {
     await flushPromises()
 
     const props = captured(0)
-    expect(props.columnDefs.map((column) => column.field)).toEqual(['id', 'name'])
-    expect(props.columnDefs[0]?.valueFormatter({ value: null })).toBe('NULL')
+    expect(props.columnDefs.map((column) => column.field)).toEqual(['__rowNumber', 'id', 'name'])
+    expect(props.columnDefs[0]?.pinned).toBe('left')
+    expect(props.columnDefs[0]?.valueGetter?.({ node: { rowIndex: 2 } })).toBe(3)
+    expect(props.columnDefs[0]?.valueGetter?.({ node: null })).toBe(1)
+    expect(props.columnDefs[1]?.valueFormatter?.({ value: null })).toBe('NULL')
+    expect(props.columnDefs[1]?.cellClass).toBe('result-grid__align-right')
+    expect(props.columnDefs[2]?.cellClass).toBeUndefined()
     expect(props.rowData).toEqual(rows)
     expect(props.rowSelection).toMatchObject({
       mode: 'multiRow',
@@ -179,7 +193,7 @@ describe('ResultGrid', () => {
     expect(gridState.setCalls).toHaveLength(1)
     expect(gridState.setCalls[0]?.key).toBe('theme')
     expect(gridState.setCalls[0]?.value).toMatchObject({
-      params: { backgroundColor: '#1e2128', browserColorScheme: 'dark' }
+      params: { backgroundColor: '#1e1e1e', browserColorScheme: 'dark' }
     })
   })
 

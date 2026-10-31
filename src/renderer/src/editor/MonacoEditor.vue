@@ -48,12 +48,20 @@ onMounted(async () => {
     editor = loaded.editor.create(host.value, {
       model,
       theme: monacoTheme(props.theme),
-      ariaLabel: t('lab.editorTitle'),
+      ariaLabel: t('shell.editor.label'),
       automaticLayout: true,
-      fontSize: 13,
+      fontFamily: "'Consolas', 'Courier New', monospace",
+      fontSize: 12,
+      lineHeight: 16,
+      lineNumbersMinChars: 3,
+      glyphMargin: false,
+      folding: false,
       minimap: { enabled: false },
+      padding: { top: 3, bottom: 3 },
       scrollBeyondLastLine: false,
       fixedOverflowWidgets: true,
+      renderLineHighlight: 'none',
+      scrollbar: { verticalScrollbarSize: 10, horizontalScrollbarSize: 10 },
       renderWhitespace: 'selection'
     })
 
@@ -129,7 +137,7 @@ defineExpose({ getViewState, setViewState, getValue, focus })
       class="monaco-editor__error"
       role="alert"
     >
-      {{ t('lab.editorLoadFailure') }}
+      {{ t('shell.editor.loadFailure') }}
     </p>
   </div>
 </template>
@@ -137,7 +145,7 @@ defineExpose({ getViewState, setViewState, getValue, focus })
 <style scoped>
 .monaco-editor {
   height: 100%;
-  min-height: 12rem;
+  min-height: 0;
 }
 
 .monaco-editor__host {
@@ -145,7 +153,7 @@ defineExpose({ getViewState, setViewState, getValue, focus })
 }
 
 .monaco-editor__error {
-  margin: var(--space-2) 0 0;
-  color: var(--color-danger);
+  margin: 8px;
+  color: var(--danger);
 }
 </style>

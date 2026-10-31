@@ -7,6 +7,8 @@
 export interface GridColumnDescriptor {
   field: string
   header: string
+  /** Presentation only; the copy serializer ignores this property. */
+  align?: 'left' | 'right'
 }
 
 export const NULL_DISPLAY_VALUE = 'NULL'

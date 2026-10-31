@@ -19,7 +19,7 @@ test('the packaged app opens the editor and the grid without a dev server', asyn
   try {
     const page = await app.firstWindow()
 
-    await expect(page.locator('h1')).toHaveText('SeshatSQL')
+    await expect(page).toHaveTitle('SeshatSQL')
     await page.waitForSelector('[data-testid="monaco-editor"] .monaco-editor', { timeout: 30_000 })
     await expect(page.locator('[data-testid="result-grid"] .ag-row')).toHaveCount(4)
     expect(await page.url()).toBe('app://seshat/index.html')
