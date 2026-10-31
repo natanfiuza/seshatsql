@@ -1,45 +1,51 @@
 /*
- * Design tokens. Colors are mirrored in src/renderer/src/grid/grid-theme.ts,
- * because the AG Grid Theming API needs concrete color values; keep both in sync.
+ * Desktop chrome tokens for the provisional HeidiSQL-like shell.
+ * Colors are mirrored in src/renderer/src/theme/palette.ts because the AG Grid
+ * Theming API needs concrete values; tests/unit/palette.test.ts enforces sync.
  */
 
 :root {
-  --color-bg: #f5f6f8;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f0f1f4;
-  --color-border: #d7d9e0;
-  --color-text: #1c1e24;
-  --color-text-muted: #5b6070;
-  --color-accent: #2f6feb;
-  --color-accent-contrast: #ffffff;
-  --color-danger: #b3261e;
-  --color-focus: #2f6feb;
-  --grid-header-background: #f1f2f5;
-  --grid-odd-row-background: #fafafc;
-  --grid-selected-row-background: #dbe6ff;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.5rem;
-}
+  --chrome-bg: #f0f0f0;
+  --surface: #ffffff;
+  --surface-alt: #f7f7f7;
+  --border: #a0a0a0;
+  --border-soft: #d7d7d7;
+  --text: #1a1a1a;
+  --text-muted: #6b6b6b;
+  --accent: #0078d7;
+  --accent-text: #ffffff;
+  --danger: #b3261e;
+  --focus: #0078d7;
+  --hover: #dcecfa;
+  --selected-bg: #0078d7;
+  --selected-text: #ffffff;
+  --grid-header-bg: #f0f0f0;
+  --grid-line: #d7d7d7;
+  --grid-row-number: #6b6b6b;
+  --gutter-bg: #f5f5f5;
+  --splitter: #f0f0f0;
+  --editor-bg: #ffffff;
 
-:root[data-theme='dark'] {
-  --color-bg: #16181d;
-  --color-surface: #1e2128;
-  --color-surface-muted: #262a33;
-  --color-border: #353a45;
-  --color-text: #e8eaf0;
-  --color-text-muted: #a0a6b5;
-  --color-accent: #6d9bff;
-  --color-accent-contrast: #0d1117;
-  --color-danger: #ff8a80;
-  --color-focus: #6d9bff;
-  --grid-header-background: #242833;
-  --grid-odd-row-background: #21252d;
-  --grid-selected-row-background: #2b3d63;
+  --font-ui: Tahoma, 'Segoe UI', sans-serif;
+  --font-data: Tahoma, 'Segoe UI', sans-serif;
+  --font-mono: Consolas, 'Courier New', monospace;
+  --font-size-ui: 12px;
+  --font-size-data: 11px;
+  --font-size-mono: 12px;
+
+  --menubar-h: 22px;
+  --toolbar-h: 26px;
+  --control-h: 22px;
+  --icon-size: 16px;
+  --tabstrip-h: 24px;
+  --tree-w: 270px;
+  --editor-h: 100px;
+  --editor-min: 40px;
+  --results-min: 120px;
+  --log-h: 80px;
+  --splitter-size: 4px;
+  --status-h: 20px;
+  --row-h: 20px;
 }
 
 :root[data-theme='light'] {
@@ -48,4 +54,24 @@
 
 :root[data-theme='dark'] {
   color-scheme: dark;
+  --chrome-bg: #202020;
+  --surface: #1e1e1e;
+  --surface-alt: #262626;
+  --border: #4a4a4a;
+  --border-soft: #333333;
+  --text: #e8e8e8;
+  --text-muted: #9a9a9a;
+  --accent: #2563eb;
+  --accent-text: #ffffff;
+  --danger: #ff8a80;
+  --focus: #6d9bff;
+  --hover: #333a44;
+  --selected-bg: #264f78;
+  --selected-text: #ffffff;
+  --grid-header-bg: #2d2d2d;
+  --grid-line: #3c3c3c;
+  --grid-row-number: #9a9a9a;
+  --gutter-bg: #252526;
+  --splitter: #2a2a2a;
+  --editor-bg: #1e1e1e;
 }

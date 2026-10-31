@@ -18,3 +18,5 @@ MySQL cancel: https://dev.mysql.com/doc/en/kill.html
 MPL resumo: https://choosealicense.com/licenses/mpl-2.0/
 HeidiSQL: https://github.com/HeidiSQL/HeidiSQL
 HeidiSQL (cópia local, referência funcional apenas; GPL-2.0, fora do repositório): C:\Users\nataniel\projetos\pessoal\seshatsql_projeto\HeidiSQL
+Streamline Nova Line – Free (ícones; CC BY 4.0): https://www.streamlinehq.com/icons/nova-line
+Creative Commons Attribution 4.0 International: https://creativecommons.org/licenses/by/4.0/

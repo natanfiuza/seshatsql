@@ -7,7 +7,8 @@ import type {
   GridApi,
   GridReadyEvent,
   RowSelectionOptions,
-  ValueFormatterParams
+  ValueFormatterParams,
+  ValueGetterParams
 } from 'ag-grid-community'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
@@ -32,17 +33,39 @@ let gridApi: GridApi | null = null
 
 const gridTheme = ref(createGridTheme(props.theme))
 
-const columnDefs = computed<ColDef[]>(() =>
-  props.columns.map((column) => ({
+/**
+ * Row numbers are a manual pinned column: AllCommunityModule in AG Grid 36.2.0
+ * does not include RowNumbersModule. A value getter keeps the number tied to
+ * the displayed position while sorting, without touching the row data or copy.
+ */
+const ROW_NUMBER_FIELD = '__rowNumber'
+
+const columnDefs = computed<ColDef[]>(() => [
+  {
+    field: ROW_NUMBER_FIELD,
+    headerName: '#',
+    pinned: 'left',
+    width: 44,
+    minWidth: 44,
+    maxWidth: 44,
+    sortable: false,
+    resizable: false,
+    suppressMovable: true,
+    lockPosition: true,
+    cellClass: 'result-grid__row-number',
+    valueGetter: (params: ValueGetterParams) => (params.node?.rowIndex ?? 0) + 1
+  },
+  ...props.columns.map((column) => ({
     field: column.field,
     headerName: column.header,
     sortable: true,
     resizable: true,
     minWidth: 120,
     flex: 1,
+    cellClass: column.align === 'right' ? 'result-grid__align-right' : undefined,
     valueFormatter: (params: ValueFormatterParams) => formatCellForDisplay(params.value)
   }))
-)
+])
 
 const defaultColDef = computed<ColDef>(() => ({
   suppressHeaderMenuButton: true,
@@ -145,6 +168,7 @@ onBeforeUnmount(() => {
       :row-selection="rowSelection"
       :locale-text="localeText"
       :enable-cell-text-selection="true"
+      :header-height="24"
       @grid-ready="onGridReady"
     />
   </div>
@@ -153,11 +177,26 @@ onBeforeUnmount(() => {
 <style scoped>
 .result-grid {
   height: 100%;
-  min-height: 12rem;
+  min-height: 0;
 }
 
 .result-grid__grid {
   width: 100%;
   height: 100%;
+}
+
+/* The theming API has no selected-text color; keep white on the blue fill. */
+.result-grid :deep(.ag-row-selected .ag-cell) {
+  color: var(--selected-text);
+}
+
+.result-grid :deep(.result-grid__align-right) {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.result-grid :deep(.result-grid__row-number) {
+  justify-content: flex-end;
+  color: var(--grid-row-number);
 }
 </style>

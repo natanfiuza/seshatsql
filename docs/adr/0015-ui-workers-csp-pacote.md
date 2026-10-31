@@ -1,6 +1,6 @@
 # ADR 0015 — Renderer empacotado, CSP, workers, grid, temas e idiomas (S05)
 
-Status: **proposto**. Sustentado por medição real em `docs/spikes/20261030_s05-ui-package-evidence.md` (build, pacote `win-unpacked`, e2e no app compilado e no executável, log de requisições). Não substitui a revisão humana nem altera os requisitos das rodadas 1–6.
+Status: **proposto**. Sustentado por medição real em `docs/spikes/20261030_s05-ui-package-evidence.md` (build, pacote `win-unpacked`, e2e no app compilado e no executável, log de requisições). A revisão visual de 2026-10-31 acrescentou D-S05-09 a D-S05-12, com evidência em `docs/spikes/20261031_s05-visual-evidence.md`. Não substitui a revisão humana nem altera os requisitos das rodadas 1–6.
 
 ## Contexto
 O gate do S05 exige um pacote Windows que abra editor e grid **sem servidor dev** e **sem rede**, com workers do Monaco sob CSP estrita, cópia de dados com o AG Grid Community, temas claro/escuro, cinco idiomas e evidência de que nenhuma requisição externa acontece. O scaffold do T01 não tinha nada disso: sem `app://`, sem CSP, sem Monaco, sem grid, sem tema, sem catálogos completos e sem empacotamento.
@@ -85,6 +85,44 @@ Consequência para o futuro: qualquer dependência de runtime do processo main (
 | 1 | `SESHAT_REQUEST_LOG` liga o registro de `METHOD URL` das requisições do renderer | prova observável de “só `app://`” |
 | 2 | Desligado por padrão; grava só URL e método, nunca corpo, header ou SQL | o log não pode virar vazamento |
 | 3 | O e2e falha se qualquer linha não casar `^app://seshat/` | impede regressão silenciosa (CDN, telemetria, fonte remota) |
+
+### D-S05-09 — Chrome desktop denso, medido na referência
+| # | Regra | Por quê |
+|---|---|---|
+| 1 | Menu 22 px, toolbar 26 px, controles 22×22, ícones 16×16, abas 24 px, status 20 px, splitters 4 px, raio 0 | reproduz a densidade de uma ferramenta de banco de dados, não de uma página web |
+| 2 | Árvore 270 px; editor 100 px (mínimo 40) sobre resultados (mínimo 120) sobre log de 80 px | hierarquia de leitura do trabalho SQL |
+| 3 | Tahoma 12 px no chrome, Tahoma 11 px nos dados, Consolas 12 px com linha de 16 px | fonte nativa densa e alinhamento do código |
+| 4 | Nenhum cartão, sombra de conteúdo ou degradê; `html/body/#app` sem rolagem de página | a janela inteira é o aplicativo; a rolagem fica dentro das regiões |
+| 5 | Splits aninhados dimensionados pelo painel configurado até o usuário ajustar; depois o valor é apenas limitado pelos mínimos | evita que a medição transitória do pai desloque o log de 80 px |
+
+### D-S05-10 — Menu dentro da janela, itens inertes e acessíveis
+| # | Regra | Por quê |
+|---|---|---|
+| 1 | Menu HTML com Arquivo, Editar, Consulta, Exibir, Ferramentas e Ajuda; menu nativo do Electron removido (`Menu.setApplicationMenu(null)`) | evita menu duplicado e mantém a aparência da referência |
+| 2 | Itens sem implementação com `aria-disabled="true"`, `tabindex="-1"` e tooltip único de i18n | comunicam a indisponibilidade sem prometer ação |
+| 3 | Teclado: setas, Home/End, Escape, roving tabindex; clique fora fecha | acessibilidade equivalente à de um menu nativo |
+| 4 | Sem mnemônicos Alt (`accesskey`) nesta etapa | limitação registrada; não há requisito de atalho de menu no MVP |
+| 5 | Rótulos e tooltips vêm dos cinco catálogos | texto de UI nunca fixo no código |
+
+### D-S05-11 — Ícones Nova Line – Free sob CC BY 4.0
+| # | Regra | Por quê |
+|---|---|---|
+| 1 | 16 SVGs de `assets/icons/nova_line` copiados sem alteração para `src/renderer/src/assets/icons/nova-line/` | o usuário forneceu o conjunto gratuito; nada do HeidiSQL é usado |
+| 2 | Exibição por `mask-image` + `background-color: currentColor` | um arquivo serve os dois temas sem editar cor |
+| 3 | Atribuição em `ATTRIBUTION.md` na pasta e em `docs/09`; créditos visíveis no app ficam para T13 | obrigação CC BY registrada desde já |
+| 4 | A CSP continua `img-src 'self' data:`; nenhum ícone remoto | o app segue offline |
+| 5 | Onde o conjunto não tem o conceito (pasta, play isolado), escolhe-se o nome semanticamente mais próximo e registra-se a escolha | não se desenha nem se copia asset de outra licença |
+
+### D-S05-12 — Grid, editor e cópia preservados na densidade nova
+| # | Regra | Por quê |
+|---|---|---|
+| 1 | Coluna “#” manual fixada à esquerda, com `valueGetter` sobre `rowIndex` | a Community 36.2.0 não tem `RowNumbersModule`; `rowData` e descritores não mudam |
+| 2 | Cabeçalho 24 px, linha 20 px, bordas nos dois eixos, sem zebra; números alinhados à direita | leitura tabular densa |
+| 3 | Ctrl+C continua produzindo TSV com cabeçalhos e **sem** “#” | contrato da cópia inalterado |
+| 4 | O aviso de cópia ocupa a barra de status por 2,5 s e depois volta à contagem de linhas | não esconde informação permanente |
+| 5 | Janela 950×600, mínimo 865×480; atalhos de DevTools só em desenvolvimento via `before-input-event` | dimensão de referência sem expor DevTools no pacote |
+
+**Medido**: a superfície do cabeçalho do AG Grid é pintada pelo `::after` de `.ag-header-row`, não pelo `background` de `.ag-header`; o e2e verifica a variável e a camada pintada. Monaco 0.57 usa EditContext (`div.native-edit-context`) como alvo de foco.
 
 ## Alternativas registradas e não adotadas
 - **`file://` para o renderer** — não sustenta módulos ES, workers nem `fetch` com a semântica necessária; o próprio Monaco documenta que workers não funcionam em `file://`.

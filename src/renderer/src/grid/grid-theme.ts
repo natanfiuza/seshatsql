@@ -1,41 +1,32 @@
 import { themeQuartz } from 'ag-grid-community'
 
+import { PALETTES } from '../theme/palette'
 import type { ResolvedTheme } from '../theme/theme'
 
 /**
- * AG Grid Theming API needs concrete colors; these mirror styles/tokens.css.
- * Keep both lists in sync when a token changes.
+ * The grid uses the same concrete palette as the chrome (theme/palette.ts), so a
+ * theme change cannot leave it on stale colors. Density follows the observed
+ * desktop reference: 20 px rows, 1 px borders on both axes, no zebra striping.
  */
-const PALETTES = {
-  light: {
-    accentColor: '#2f6feb',
-    backgroundColor: '#ffffff',
-    foregroundColor: '#1c1e24',
-    borderColor: '#d7d9e0',
-    headerBackgroundColor: '#f1f2f5',
-    headerTextColor: '#1c1e24',
-    oddRowBackgroundColor: '#fafafc',
-    selectedRowBackgroundColor: '#dbe6ff',
-    browserColorScheme: 'light'
-  },
-  dark: {
-    accentColor: '#6d9bff',
-    backgroundColor: '#1e2128',
-    foregroundColor: '#e8eaf0',
-    borderColor: '#353a45',
-    headerBackgroundColor: '#242833',
-    headerTextColor: '#e8eaf0',
-    oddRowBackgroundColor: '#21252d',
-    selectedRowBackgroundColor: '#2b3d63',
-    browserColorScheme: 'dark'
-  }
-} as const
-
 export function createGridTheme(theme: ResolvedTheme) {
+  const palette = PALETTES[theme]
+
   return themeQuartz.withParams({
-    ...PALETTES[theme],
-    fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-    fontSize: 13,
-    wrapperBorderRadius: 6
+    accentColor: palette.accent,
+    backgroundColor: palette.surface,
+    foregroundColor: palette.text,
+    borderColor: palette.gridLine,
+    headerBackgroundColor: palette.gridHeaderBg,
+    headerTextColor: palette.text,
+    oddRowBackgroundColor: palette.surface,
+    selectedRowBackgroundColor: palette.selectedBg,
+    browserColorScheme: theme,
+    fontFamily: "Tahoma, 'Segoe UI', sans-serif",
+    fontSize: 11,
+    rowHeight: 20,
+    cellHorizontalPadding: 6,
+    wrapperBorderRadius: 0,
+    rowBorder: true,
+    columnBorder: true
   })
 }

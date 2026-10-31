@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 
-import { app, BrowserWindow, session } from 'electron'
+import { app, BrowserWindow, Menu, session } from 'electron'
 
 import { PRODUCT_NAME } from '../domain/app-info'
 import { installAppProtocol, registerAppScheme } from './protocol/app-protocol'
@@ -22,10 +22,40 @@ function installPermissionPolicy(): void {
   })
 }
 
+/** Keeps DevTools reachable in development now that the native menu is gone. */
+function installDevShortcuts(window: BrowserWindow): void {
+  if (app.isPackaged) {
+    return
+  }
+  window.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown') {
+      return
+    }
+    if (input.key === 'F12') {
+      event.preventDefault()
+      window.webContents.toggleDevTools()
+      return
+    }
+    const chord = (input.control || input.meta) && input.shift
+    if (!chord) {
+      return
+    }
+    if (input.key.toLowerCase() === 'i') {
+      event.preventDefault()
+      window.webContents.toggleDevTools()
+    } else if (input.key.toLowerCase() === 'r') {
+      event.preventDefault()
+      window.webContents.reload()
+    }
+  })
+}
+
 function createWindow(): void {
   const window = new BrowserWindow({
-    width: 1280,
-    height: 800,
+    width: 950,
+    height: 600,
+    minWidth: 865,
+    minHeight: 480,
     show: false,
     title: PRODUCT_NAME,
     webPreferences: {
@@ -48,6 +78,8 @@ function createWindow(): void {
     event.preventDefault()
   })
 
+  installDevShortcuts(window)
+
   const rendererUrl = process.env['ELECTRON_RENDERER_URL']
   if (rendererUrl !== undefined && !app.isPackaged) {
     void window.loadURL(rendererUrl)
@@ -57,6 +89,9 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  // The shell draws its own menu bar inside the window.
+  Menu.setApplicationMenu(null)
+
   // In a packaged app __dirname is inside the asar archive; the same relative
   // path keeps working there and in `electron-vite preview`.
   installAppProtocol(join(__dirname, '../renderer'))

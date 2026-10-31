@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /* eslint-disable vue/one-component-per-file -- the two stubs replace the real child components */
-import { mount, type VueWrapper } from '@vue/test-utils'
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n, setLocale } from '../../src/renderer/src/i18n'
@@ -77,14 +77,16 @@ beforeEach(() => {
 })
 
 describe('S05Lab', () => {
-  it('renders the interface in the selected locale before any interaction', () => {
+  it('renders the shell in the selected locale before any interaction', () => {
     setLocale('pt-BR')
 
     const wrapper = mountLab()
 
     expect(wrapper.get('h1').text()).toBe('SeshatSQL')
-    expect(wrapper.text()).toContain('Laboratório de interface')
-    expect(wrapper.text()).toContain('O idioma do editor é aplicado na próxima inicialização')
+    expect(wrapper.text()).toContain('Arquivo')
+    expect(wrapper.text()).toContain('Tabelas (3)')
+    expect(wrapper.text()).toContain('Consulta 1')
+    expect(wrapper.text()).toContain('Desconectado')
     expect(wrapper.get('[data-testid="monaco-stub"]').attributes('data-locale')).toBe('pt-BR')
   })
 
@@ -104,18 +106,31 @@ describe('S05Lab', () => {
 
     await wrapper.get('[data-testid="locale-select"]').setValue('fr')
 
-    expect(wrapper.text()).toContain("Laboratoire d'interface")
-    expect(wrapper.text()).toContain("La langue de l'éditeur s'applique au prochain démarrage")
+    expect(wrapper.text()).toContain('Fichier')
+    expect(wrapper.text()).toContain('Lignes : 4')
     expect(document.documentElement.lang).toBe('fr')
     expect(wrapper.get('[data-testid="monaco-stub"]').attributes('data-locale')).toBe('fr')
+    // The notice moved out of the page and became the combobox tooltip.
+    expect(wrapper.get('[data-testid="locale-select"]').attributes('title')).toContain(
+      "s'applique au prochain démarrage"
+    )
   })
 
-  it('announces a successful copy', async () => {
-    const wrapper = mountLab()
+  it('announces a successful copy and then returns to the row count', async () => {
+    vi.useFakeTimers()
+    try {
+      const wrapper = mountLab()
 
-    await wrapper.get('[data-testid="grid-copy"]').trigger('click')
+      await wrapper.get('[data-testid="grid-copy"]').trigger('click')
 
-    expect(wrapper.get('[role="status"]').text()).toBe('Copied to the clipboard.')
+      expect(wrapper.get('[role="status"]').text()).toBe('Copied to the clipboard.')
+
+      vi.advanceTimersByTime(2500)
+      await flushPromises()
+      expect(wrapper.get('[role="status"]').text()).toBe('Rows: 4')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('announces a clipboard failure', async () => {
@@ -125,5 +140,43 @@ describe('S05Lab', () => {
     await wrapper.get('[data-testid="grid-copy"]').trigger('click')
 
     expect(wrapper.get('[role="status"]').text()).toBe('Could not copy to the clipboard.')
+  })
+
+  it('shows the row count and the sample brand in the status bar', () => {
+    const wrapper = mountLab()
+
+    expect(wrapper.get('[role="status"]').text()).toBe('Rows: 4')
+    expect(wrapper.text()).toContain('Sample data · SeshatSQL')
+  })
+
+  it('opens an inert menu and closes it with Escape', async () => {
+    const wrapper = mountLab()
+
+    await wrapper.get('.menubar__button').trigger('click')
+
+    const items = wrapper.findAll('.menubar__item')
+    expect(items).toHaveLength(6)
+    expect(items[0]?.text()).toBe('New')
+    expect(items[0]?.attributes('aria-disabled')).toBe('true')
+    expect(items[0]?.attributes('title')).toBe('Not available in this preview.')
+
+    await wrapper.get('.menubar__dropdown').trigger('keydown', { key: 'Escape' })
+    expect(wrapper.find('.menubar__dropdown').exists()).toBe(false)
+  })
+
+  it('expands a collapsed folder and filters the tree locally', async () => {
+    const wrapper = mountLab()
+
+    expect(wrapper.text()).not.toContain('v_customer_totals')
+    await wrapper.get('[data-node-id="views"] .object-tree__box').trigger('click')
+    expect(wrapper.text()).toContain('v_customer_totals')
+
+    await wrapper.get('.object-tree__filter').setValue('custom')
+    expect(wrapper.text()).toContain('customers')
+    expect(wrapper.text()).not.toContain('orders')
+    expect(wrapper.text()).toContain('Tables (3)')
+
+    await wrapper.get('.object-tree__filter').setValue('missing')
+    expect(wrapper.text()).toContain('No matching objects')
   })
 })
