@@ -20,5 +20,5 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": ["src/renderer/**/*.ts", "src/renderer/**/*.vue"]
+  "include": ["src/renderer/**/*.ts", "src/renderer/**/*.vue", "tests/component/**/*.ts"]
 }

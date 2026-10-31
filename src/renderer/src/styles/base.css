@@ -1,3 +1,5 @@
+@import './tokens.css';
+
 html,
 body,
 #app {
@@ -6,5 +8,23 @@ body,
 
 body {
   margin: 0;
-  color-scheme: light dark;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+button,
+select {
+  font: inherit;
+  color: inherit;
 }

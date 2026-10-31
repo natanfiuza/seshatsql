@@ -1,8 +1,26 @@
 import { join } from 'node:path'
 
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, session } from 'electron'
 
 import { PRODUCT_NAME } from '../domain/app-info'
+import { installAppProtocol, registerAppScheme } from './protocol/app-protocol'
+import { APP_ENTRY_URL } from './protocol/renderer-path'
+import { installRequestLog } from './request-log'
+
+// Must run before app.whenReady().
+registerAppScheme()
+
+/** Renderer permissions granted to content; everything else is denied. */
+const ALLOWED_PERMISSIONS: ReadonlySet<string> = new Set(['clipboard-sanitized-write'])
+
+function installPermissionPolicy(): void {
+  session.defaultSession.setPermissionRequestHandler((_contents, permission, callback) => {
+    callback(ALLOWED_PERMISSIONS.has(permission))
+  })
+  session.defaultSession.setPermissionCheckHandler((_contents, permission) => {
+    return ALLOWED_PERMISSIONS.has(permission)
+  })
+}
 
 function createWindow(): void {
   const window = new BrowserWindow({
@@ -34,11 +52,17 @@ function createWindow(): void {
   if (rendererUrl !== undefined && !app.isPackaged) {
     void window.loadURL(rendererUrl)
   } else {
-    void window.loadFile(join(__dirname, '../renderer/index.html'))
+    void window.loadURL(APP_ENTRY_URL)
   }
 }
 
 app.whenReady().then(() => {
+  // In a packaged app __dirname is inside the asar archive; the same relative
+  // path keeps working there and in `electron-vite preview`.
+  installAppProtocol(join(__dirname, '../renderer'))
+  installPermissionPolicy()
+  installRequestLog()
+
   createWindow()
 
   app.on('activate', () => {

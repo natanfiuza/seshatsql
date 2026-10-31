@@ -1,0 +1,15 @@
+# S05 packaging scope: unpacked Windows directory (asar) only.
+# The NSIS installer stays in the `dist:win` script for T13.
+appId: br.com.natanfiuza.seshatsql
+productName: SeshatSQL
+directories:
+  output: dist
+asar: true
+# No native modules are used yet; everything main needs is bundled into out/.
+npmRebuild: false
+files:
+  - out/**/*
+  - package.json
+  # The renderer and main bundles already contain every library they import,
+  # so shipping node_modules would only duplicate them inside the asar.
+  - '!node_modules/**/*'

@@ -17,3 +17,4 @@ MySQL count/estimates: https://dev.mysql.com/doc/mysql-infoschema-excerpt/8.0/en
 MySQL cancel: https://dev.mysql.com/doc/en/kill.html
 MPL resumo: https://choosealicense.com/licenses/mpl-2.0/
 HeidiSQL: https://github.com/HeidiSQL/HeidiSQL
+HeidiSQL (cópia local, referência funcional apenas; GPL-2.0, fora do repositório): C:\Users\nataniel\projetos\pessoal\seshatsql_projeto\HeidiSQL
