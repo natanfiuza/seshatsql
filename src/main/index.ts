@@ -3,12 +3,26 @@ import { join } from 'node:path'
 import { app, BrowserWindow, Menu, session } from 'electron'
 
 import { PRODUCT_NAME } from '../domain/app-info'
+import { createCloseCoordinator, type CloseCoordinator } from './close-coordinator'
+import { createPersistenceRuntime, type PersistenceRuntime } from './persistence'
 import { installAppProtocol, registerAppScheme } from './protocol/app-protocol'
 import { APP_ENTRY_URL } from './protocol/renderer-path'
 import { installRequestLog } from './request-log'
 
+let mainWindow: BrowserWindow | null = null
+let closeCoordinator: CloseCoordinator | null = null
+let persistenceRuntime: PersistenceRuntime | null = null
+let disposePersistenceIpc: (() => void) | null = null
+
 // Must run before app.whenReady().
 registerAppScheme()
+
+// Test-only override so end-to-end runs never share the real Electron profile
+// (or its Chromium process singleton) with each other or with the user.
+const userDataOverride = process.env['SESHAT_USER_DATA_DIR']
+if (userDataOverride !== undefined && userDataOverride !== '') {
+  app.setPath('userData', userDataOverride)
+}
 
 /** Renderer permissions granted to content; everything else is denied. */
 const ALLOWED_PERMISSIONS: ReadonlySet<string> = new Set(['clipboard-sanitized-write'])
@@ -66,6 +80,16 @@ function createWindow(): void {
     }
   })
 
+  mainWindow = window
+  closeCoordinator = createCloseCoordinator(window)
+  window.on('closed', () => {
+    closeCoordinator?.dispose()
+    closeCoordinator = null
+    if (mainWindow === window) {
+      mainWindow = null
+    }
+  })
+
   window.once('ready-to-show', () => {
     window.show()
   })
@@ -88,7 +112,7 @@ function createWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // The shell draws its own menu bar inside the window.
   Menu.setApplicationMenu(null)
 
@@ -98,6 +122,17 @@ app.whenReady().then(() => {
   installPermissionPolicy()
   installRequestLog()
 
+  const dataDirectoryOverride = process.env['SESHAT_DATA_DIR']
+  persistenceRuntime = await createPersistenceRuntime(
+    dataDirectoryOverride === undefined || dataDirectoryOverride === ''
+      ? { home: app.getPath('home') }
+      : { home: app.getPath('home'), dataDirectory: dataDirectoryOverride }
+  )
+  disposePersistenceIpc = persistenceRuntime.installIpc(
+    () => mainWindow,
+    process.env['ELECTRON_RENDERER_URL']
+  )
+
   createWindow()
 
   app.on('activate', () => {
@@ -105,6 +140,11 @@ app.whenReady().then(() => {
       createWindow()
     }
   })
+})
+
+app.on('will-quit', () => {
+  disposePersistenceIpc?.()
+  disposePersistenceIpc = null
 })
 
 app.on('window-all-closed', () => {

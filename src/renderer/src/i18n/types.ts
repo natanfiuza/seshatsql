@@ -116,6 +116,33 @@ export type Messages = {
       log: string
     }
   }
+  persistence: {
+    title: string
+    warning: {
+      recovered: string
+      quarantined: string
+      quarantineFailed: string
+      futureVersion: string
+      migrated: string
+      largeFile: string
+      fileTooLarge: string
+      readFailed: string
+      defaultsUsed: string
+      legacyDirectory: string
+      saveFailed: string
+    }
+    close: {
+      failed: string
+    }
+    actions: {
+      retry: string
+      exitWithoutSaving: string
+      confirmDiscard: string
+      confirmExit: string
+      cancel: string
+      dismiss: string
+    }
+  }
   /** Strings handed to AG Grid through localeText; only keys we actually use. */
   grid: {
     nullValue: string

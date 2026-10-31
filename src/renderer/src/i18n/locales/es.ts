@@ -115,6 +115,34 @@ const messages: Messages = {
       log: 'Redimensionar el registro SQL'
     }
   },
+  persistence: {
+    title: 'Almacenamiento',
+    warning: {
+      recovered: 'El archivo principal estaba dañado; se cargó la última copia de seguridad válida.',
+      quarantined: 'Un archivo dañado se conservó en cuarentena.',
+      quarantineFailed: 'No se pudo mover un archivo dañado a la cuarentena.',
+      futureVersion: 'Un archivo fue escrito por una versión más reciente y no se sobrescribirá.',
+      migrated: 'Un archivo antiguo se migró al formato actual.',
+      largeFile: 'Un archivo de almacenamiento supera 1 MB.',
+      fileTooLarge:
+        'Un archivo de almacenamiento supera el límite de seguridad de 16 MB y no se cargó.',
+      readFailed: 'No se pudo leer un archivo de almacenamiento.',
+      defaultsUsed: 'Se usan valores predeterminados porque no se pudo leer ningún archivo válido.',
+      legacyDirectory: 'Se encontró una carpeta de datos heredada y se dejó intacta.',
+      saveFailed: 'No se pudieron guardar tus datos.'
+    },
+    close: {
+      failed: 'No se pudo guardar antes de cerrar. La ventana permanece abierta.'
+    },
+    actions: {
+      retry: 'Reintentar',
+      exitWithoutSaving: 'Salir sin guardar',
+      confirmDiscard: '¿Descartar los cambios sin guardar y salir?',
+      confirmExit: 'Salir',
+      cancel: 'Cancelar',
+      dismiss: 'Descartar'
+    }
+  },
   grid: {
     nullValue: 'NULL',
     noRowsToShow: 'No hay filas para mostrar',

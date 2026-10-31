@@ -1,24 +1,35 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { PersistedCursor, PersistedSelection } from '../../../../domain/persistence/types'
 import MonacoEditor from '../../editor/MonacoEditor.vue'
 import type { SupportedLocale } from '../../i18n'
 import type { ResolvedTheme } from '../../theme/theme'
 import AppTabStrip from '../shell/AppTabStrip.vue'
 import LabHelpersPanel from './LabHelpersPanel.vue'
 
+interface EditorTab {
+  readonly id: string
+  readonly label: string
+}
+
 defineProps<{
+  tabs: readonly EditorTab[]
+  activeId: string
   sql: string
   theme: ResolvedTheme
   locale: SupportedLocale
+  cursor: PersistedCursor | null
+  selection: PersistedSelection | null
 }>()
 
-const emit = defineEmits<{ change: [value: string] }>()
+const emit = defineEmits<{
+  change: [value: string]
+  select: [id: string]
+  view: [cursor: PersistedCursor, selection: PersistedSelection | null]
+}>()
 
 const { t } = useI18n()
-
-const tabs = computed(() => [{ id: 'query-1', label: t('shell.tabs.queryOne') }])
 </script>
 
 <template>
@@ -28,18 +39,23 @@ const tabs = computed(() => [{ id: 'query-1', label: t('shell.tabs.queryOne') }]
   >
     <AppTabStrip
       :tabs="tabs"
-      active-id="query-1"
+      :active-id="activeId"
       :label="t('shell.editor.label')"
+      @select="emit('select', $event)"
     />
 
     <div class="editor-pane__body">
       <MonacoEditor
+        :key="activeId"
         class="editor-pane__editor"
-        model-id="s05-lab"
+        :model-id="activeId"
         :value="sql"
         :theme="theme"
         :locale="locale"
+        :cursor="cursor"
+        :selection="selection"
         @change="emit('change', $event)"
+        @view="(cursor, selection) => emit('view', cursor, selection)"
       />
       <LabHelpersPanel class="editor-pane__helpers" />
     </div>

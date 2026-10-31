@@ -115,6 +115,34 @@ const messages: Messages = {
       log: 'Redimensionner le journal SQL'
     }
   },
+  persistence: {
+    title: 'Stockage',
+    warning: {
+      recovered: 'Le fichier principal était endommagé ; la dernière sauvegarde valide a été chargée.',
+      quarantined: 'Un fichier endommagé a été conservé en quarantaine.',
+      quarantineFailed: 'Impossible de déplacer un fichier endommagé vers la quarantaine.',
+      futureVersion: 'Un fichier a été écrit par une version plus récente et ne sera pas écrasé.',
+      migrated: 'Un fichier plus ancien a été migré vers le format actuel.',
+      largeFile: 'Un fichier de stockage dépasse 1 Mo.',
+      fileTooLarge:
+        "Un fichier de stockage dépasse la limite de sécurité de 16 Mo et n'a pas été chargé.",
+      readFailed: 'Impossible de lire un fichier de stockage.',
+      defaultsUsed: 'Les paramètres par défaut sont utilisés car aucun fichier valide n’a pu être lu.',
+      legacyDirectory: 'Un dossier de données hérité a été trouvé et laissé intact.',
+      saveFailed: 'Impossible d’enregistrer vos données.'
+    },
+    close: {
+      failed: 'Impossible d’enregistrer avant la fermeture. La fenêtre reste ouverte.'
+    },
+    actions: {
+      retry: 'Réessayer',
+      exitWithoutSaving: 'Quitter sans enregistrer',
+      confirmDiscard: 'Abandonner les modifications non enregistrées et quitter ?',
+      confirmExit: 'Quitter',
+      cancel: 'Annuler',
+      dismiss: 'Ignorer'
+    }
+  },
   grid: {
     nullValue: 'NULL',
     noRowsToShow: 'Aucune ligne à afficher',

@@ -1,3 +1,7 @@
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { _electron as electron, type ElectronApplication } from '@playwright/test'
 
 /**
@@ -20,10 +24,27 @@ export interface LaunchOptions {
   executablePath?: string
   /** File that receives the request log (SESHAT_REQUEST_LOG). */
   requestLog?: string
+  /**
+   * Persistence directory. A fresh temporary directory is used by default so
+   * end-to-end runs never touch the real user profile.
+   */
+  dataDir?: string
+  /**
+   * Electron userData directory. A fresh temporary directory per launch keeps
+   * concurrent test instances from sharing the Chromium process singleton.
+   */
+  userDataDir?: string
 }
 
 export function launchApp(options: LaunchOptions = {}): Promise<ElectronApplication> {
-  const env = appEnvironment(options.requestLog === undefined ? {} : { SESHAT_REQUEST_LOG: options.requestLog })
+  const extra: Record<string, string> = {
+    SESHAT_DATA_DIR: options.dataDir ?? mkdtempSync(join(tmpdir(), 'seshat-data-')),
+    SESHAT_USER_DATA_DIR: options.userDataDir ?? mkdtempSync(join(tmpdir(), 'seshat-userdata-'))
+  }
+  if (options.requestLog !== undefined) {
+    extra['SESHAT_REQUEST_LOG'] = options.requestLog
+  }
+  const env = appEnvironment(extra)
 
   if (options.executablePath === undefined) {
     return electron.launch({ args: ['.'], env })

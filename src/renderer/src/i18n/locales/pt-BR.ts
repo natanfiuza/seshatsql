@@ -115,6 +115,34 @@ const messages: Messages = {
       log: 'Redimensionar registro SQL'
     }
   },
+  persistence: {
+    title: 'Armazenamento',
+    warning: {
+      recovered: 'O arquivo principal estava danificado; o último backup válido foi carregado.',
+      quarantined: 'Um arquivo danificado foi preservado em quarentena.',
+      quarantineFailed: 'Não foi possível mover um arquivo danificado para a quarentena.',
+      futureVersion: 'Um arquivo foi gravado por uma versão mais nova e não será sobrescrito.',
+      migrated: 'Um arquivo antigo foi migrado para o formato atual.',
+      largeFile: 'Um arquivo de armazenamento tem mais de 1 MB.',
+      fileTooLarge:
+        'Um arquivo de armazenamento excede o limite de segurança de 16 MB e não foi carregado.',
+      readFailed: 'Não foi possível ler um arquivo de armazenamento.',
+      defaultsUsed: 'Configurações padrão estão em uso porque nenhum arquivo válido pôde ser lido.',
+      legacyDirectory: 'Uma pasta de dados legada foi encontrada e mantida intacta.',
+      saveFailed: 'Não foi possível salvar seus dados.'
+    },
+    close: {
+      failed: 'Não foi possível salvar antes de fechar. A janela permanece aberta.'
+    },
+    actions: {
+      retry: 'Tentar novamente',
+      exitWithoutSaving: 'Sair sem salvar',
+      confirmDiscard: 'Descartar alterações não salvas e sair?',
+      confirmExit: 'Sair',
+      cancel: 'Cancelar',
+      dismiss: 'Dispensar'
+    }
+  },
   grid: {
     nullValue: 'NULL',
     noRowsToShow: 'Nenhuma linha para exibir',
