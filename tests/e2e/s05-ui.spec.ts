@@ -55,7 +55,7 @@ test('loads the shell through the app:// scheme in a desktop-sized window', asyn
 
   const editor = page.locator('[data-testid="monaco-editor"]')
   expect(await editor.getAttribute('data-language')).toBe('mysql')
-  expect(await editor.getAttribute('data-model-uri')).toBe('inmemory://seshat/tab/s05-lab')
+  expect(await editor.getAttribute('data-model-uri')).toBe('inmemory://seshat/tab/query-1')
 
   await expect(page.locator('[data-testid="result-grid"] .ag-row')).toHaveCount(4)
   await expect(page.locator('[data-testid="result-grid"] .ag-header-cell').first()).toBeVisible()

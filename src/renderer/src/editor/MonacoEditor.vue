@@ -2,18 +2,27 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { PersistedCursor, PersistedSelection } from '../../../domain/persistence/types'
 import type { SupportedLocale } from '../i18n'
 import type { ResolvedTheme } from '../theme/theme'
 import { loadMonaco, type MonacoApi, type MonacoEditor, type MonacoModel, type MonacoViewState } from './monaco'
 
-const props = defineProps<{
-  modelId: string
-  value: string
-  theme: ResolvedTheme
-  locale: SupportedLocale
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelId: string
+    value: string
+    theme: ResolvedTheme
+    locale: SupportedLocale
+    cursor?: PersistedCursor | null
+    selection?: PersistedSelection | null
+  }>(),
+  { cursor: null, selection: null }
+)
 
-const emit = defineEmits<{ change: [value: string] }>()
+const emit = defineEmits<{
+  change: [value: string]
+  view: [cursor: PersistedCursor, selection: PersistedSelection | null]
+}>()
 
 const { t } = useI18n()
 
@@ -70,10 +79,47 @@ onMounted(async () => {
         emit('change', model.getValue())
       }
     })
+
+    // Restoring before subscribing keeps the saved state from being re-saved
+    // as if the user had just moved the caret.
+    applySavedView()
+    editor.onDidChangeCursorSelection(() => {
+      if (editor === null) {
+        return
+      }
+      const position = editor.getPosition()
+      if (position === null) {
+        return
+      }
+      const selection = editor.getSelection()
+      emit(
+        'view',
+        { lineNumber: position.lineNumber, column: position.column },
+        selection === null || selection.isEmpty()
+          ? null
+          : {
+              startLineNumber: selection.startLineNumber,
+              startColumn: selection.startColumn,
+              endLineNumber: selection.endLineNumber,
+              endColumn: selection.endColumn
+            }
+      )
+    })
   } catch {
     loadError.value = true
   }
 })
+
+function applySavedView(): void {
+  if (editor === null) {
+    return
+  }
+  if (props.selection !== null) {
+    editor.setSelection(props.selection)
+  } else if (props.cursor !== null) {
+    editor.setPosition(props.cursor)
+  }
+}
 
 watch(
   () => props.value,

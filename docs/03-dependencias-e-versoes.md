@@ -45,3 +45,9 @@ Duas restrições de engine medidas, não supostas, com o Node de build congelad
 - `@vue/test-utils@2.5.1` dependia de `js-beautify ^2.0.0` → `2.0.3` → `nopt@10.0.1` (`node ^22.22.2 || ^24.15.0 || >=26.0.0`) e **abortava a instalação**. A **2.4.6** usa `js-beautify ^1.14.9` (resolvido em 1.15.4, MIT, `node >=14`) e instala com `engine-strict`. `@vue/test-utils@2.5.1` foi descartada por essa razão com aprovação do usuário (D-S05/S06-18 revisada em 2026-10-30: 2.4.6 em vez de 2.5.1).
 - `npm ls --depth=0` e `npm ci --dry-run` passam após a instalação. A instalação emite aviso de depreciação de `glob@10.5.0` (transitiva de `js-beautify`, apenas dev) e o `npm audit` reporta um advisory **crítico pré-existente** em `dompurify@3.4.15` via `monaco-editor@0.57.0`, fora do escopo desta mudança e registrado como risco — a correção sugerida pelo audit (`monaco-editor@0.56.0`) é um downgrade e não será feita sem decisão do usuário.
 O teste de componente cobre apenas componentes próprios com Monaco mockado; Monaco, worker e AG Grid reais continuam cobertos só pelo Playwright.
+
+## S06 — `yaml` e `zod` empacotados no main (2026-10-31)
+
+Nenhuma dependência nova e nenhuma versão alterada: `yaml 2.9.1` (ISC) e `zod 4.6.7` (MIT) já constavam da matriz do T00. O S06 apenas as usa em tempo de execução no processo main.
+Como `electron-builder.yml` exclui `node_modules` do asar, as duas precisam ser empacotadas pelo Vite: `electron.vite.config.ts` usa `externalizeDepsPlugin({ exclude: ['yaml', 'zod'] })`. Medição: `out/main/index.js` com 426 kB e asar do pacote com 8,6 MB (8,4 MB no S05); o app empacotado inicia, lê e grava a persistência sem `node_modules` ao lado.
+`mysql2 3.24.6` continua em `dependencies` e será tratado da mesma forma quando entrar no main (T04/T05).

@@ -115,6 +115,33 @@ const messages: Messages = {
       log: 'Resize SQL log'
     }
   },
+  persistence: {
+    title: 'Storage',
+    warning: {
+      recovered: 'The main file was damaged; the last valid backup was loaded.',
+      quarantined: 'A damaged file was preserved in quarantine.',
+      quarantineFailed: 'A damaged file could not be moved to quarantine.',
+      futureVersion: 'A file was written by a newer version and will not be overwritten.',
+      migrated: 'An older file was migrated to the current format.',
+      largeFile: 'A storage file is larger than 1 MB.',
+      fileTooLarge: 'A storage file exceeds the 16 MB safety limit and was not loaded.',
+      readFailed: 'A storage file could not be read.',
+      defaultsUsed: 'Default settings are in use because no valid file could be read.',
+      legacyDirectory: 'A legacy data folder was found and left untouched.',
+      saveFailed: 'Could not save your data.'
+    },
+    close: {
+      failed: 'Could not save before closing. The window stays open.'
+    },
+    actions: {
+      retry: 'Retry',
+      exitWithoutSaving: 'Exit without saving',
+      confirmDiscard: 'Discard unsaved changes and exit?',
+      confirmExit: 'Exit',
+      cancel: 'Cancel',
+      dismiss: 'Dismiss'
+    }
+  },
   grid: {
     nullValue: 'NULL',
     noRowsToShow: 'No rows to show',

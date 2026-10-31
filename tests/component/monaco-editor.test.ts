@@ -56,6 +56,16 @@ vi.mock('../../src/renderer/src/editor/monaco', () => {
         return model
       },
       create: (_host: HTMLElement, options: Record<string, unknown>) => {
+        const cursorListeners = new Set<() => void>()
+        let position = { lineNumber: 1, column: 1 }
+        let selection = {
+          startLineNumber: 1,
+          startColumn: 1,
+          endLineNumber: 1,
+          endColumn: 1,
+          isEmpty: () => true
+        }
+
         const editor: EditorRecord = {
           options,
           disposeCount: 0,
@@ -67,6 +77,44 @@ vi.mock('../../src/renderer/src/editor/monaco', () => {
           },
           focus: () => {
             editor['focused'] = (editor['focused'] as number) + 1
+          },
+          getPosition: () => position,
+          getSelection: () => selection,
+          setPosition: (next: { lineNumber: number; column: number }) => {
+            position = next
+            selection = {
+              ...next,
+              startLineNumber: next.lineNumber,
+              startColumn: next.column,
+              endLineNumber: next.lineNumber,
+              endColumn: next.column,
+              isEmpty: () => true
+            }
+            editor['position'] = position
+          },
+          setSelection: (next: {
+            startLineNumber: number
+            startColumn: number
+            endLineNumber: number
+            endColumn: number
+          }) => {
+            selection = {
+              ...next,
+              isEmpty: () =>
+                next.startLineNumber === next.endLineNumber && next.startColumn === next.endColumn
+            }
+            position = { lineNumber: next.endLineNumber, column: next.endColumn }
+            editor['selection'] = next
+          },
+          onDidChangeCursorSelection: (callback: () => void) => {
+            cursorListeners.add(callback)
+            return { dispose: () => cursorListeners.delete(callback) }
+          },
+          moveTo: (next: { lineNumber: number; column: number }) => {
+            position = next
+            for (const listener of cursorListeners) {
+              listener()
+            }
           },
           dispose: () => {
             editor['disposeCount'] = (editor['disposeCount'] as number) + 1
@@ -146,6 +194,42 @@ describe('MonacoEditor', () => {
 
     model.setValue('SELECT 3')
     expect(wrapper.emitted('change')?.at(-1)).toEqual(['SELECT 3'])
+  })
+
+  it('restores the persisted cursor without re-saving it as a user change', async () => {
+    const wrapper = mount(MonacoEditor, {
+      props: { ...baseProps, cursor: { lineNumber: 3, column: 5 } },
+      global: { plugins: [i18n] }
+    })
+    await flushPromises()
+
+    expect(monacoState.editors[0]?.['position']).toEqual({ lineNumber: 3, column: 5 })
+    expect(wrapper.emitted('view')).toBeUndefined()
+  })
+
+  it('restores a persisted selection and emits later cursor moves', async () => {
+    const selection = {
+      startLineNumber: 1,
+      startColumn: 2,
+      endLineNumber: 2,
+      endColumn: 4
+    }
+    const wrapper = mount(MonacoEditor, {
+      props: { ...baseProps, selection },
+      global: { plugins: [i18n] }
+    })
+    await flushPromises()
+
+    expect(monacoState.editors[0]?.['selection']).toEqual(selection)
+    expect(wrapper.emitted('view')).toBeUndefined()
+
+    const editor = monacoState.editors[0] as { moveTo: (next: { lineNumber: number; column: number }) => void }
+    editor.moveTo({ lineNumber: 2, column: 4 })
+
+    expect(wrapper.emitted('view')?.at(-1)).toEqual([
+      { lineNumber: 2, column: 4 },
+      selection
+    ])
   })
 
   it('exposes view state and focus through the component API', async () => {

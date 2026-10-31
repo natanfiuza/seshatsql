@@ -29,7 +29,10 @@ function devCspPlugin(): Plugin {
 // emitted as CJS (required by Electron's sandboxed preload) and the renderer is bundled as ESM.
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()]
+    // yaml and zod are dependencies that main must bundle: electron-builder
+    // excludes node_modules from the asar, so an external require would fail
+    // in the packaged app. Everything else stays external.
+    plugins: [externalizeDepsPlugin({ exclude: ['yaml', 'zod'] })]
   },
   preload: {
     plugins: [externalizeDepsPlugin()]
