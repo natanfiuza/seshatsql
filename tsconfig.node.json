@@ -3,7 +3,9 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2023"],
+    // DOM types are required by the sandboxed preload context and by unit tests
+    // that exercise renderer modules (theme, i18n) in jsdom.
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["node"],
     "strict": true,
     "noEmit": true,
@@ -28,6 +30,7 @@
     "src/domain/**/*.ts",
     "src/application/**/*.ts",
     "src/infrastructure/**/*.ts",
-    "tests/**/*.ts"
+    "tests/unit/**/*.ts",
+    "tests/e2e/**/*.ts"
   ]
 }

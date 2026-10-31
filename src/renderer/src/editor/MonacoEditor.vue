@@ -1,0 +1,151 @@
+<script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import type { SupportedLocale } from '../i18n'
+import type { ResolvedTheme } from '../theme/theme'
+import { loadMonaco, type MonacoApi, type MonacoEditor, type MonacoModel, type MonacoViewState } from './monaco'
+
+const props = defineProps<{
+  modelId: string
+  value: string
+  theme: ResolvedTheme
+  locale: SupportedLocale
+}>()
+
+const emit = defineEmits<{ change: [value: string] }>()
+
+const { t } = useI18n()
+
+const host = ref<HTMLDivElement | null>(null)
+const loadError = ref(false)
+// Reflects the language Monaco actually attached, so the DOM stays truthful.
+const modelLanguage = ref('')
+
+let api: MonacoApi | null = null
+let editor: MonacoEditor | null = null
+let model: MonacoModel | null = null
+let disposed = false
+
+const modelUri = computed(() => `inmemory://seshat/tab/${props.modelId}`)
+
+function monacoTheme(theme: ResolvedTheme): string {
+  return theme === 'dark' ? 'vs-dark' : 'vs'
+}
+
+onMounted(async () => {
+  try {
+    const loaded = await loadMonaco(props.locale)
+    if (disposed || host.value === null) {
+      return
+    }
+
+    api = loaded
+    const uri = loaded.Uri.parse(modelUri.value)
+    loaded.editor.getModel(uri)?.dispose()
+    model = loaded.editor.createModel(props.value, 'mysql', uri)
+    modelLanguage.value = model.getLanguageId()
+    editor = loaded.editor.create(host.value, {
+      model,
+      theme: monacoTheme(props.theme),
+      ariaLabel: t('lab.editorTitle'),
+      automaticLayout: true,
+      fontSize: 13,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      fixedOverflowWidgets: true,
+      renderWhitespace: 'selection'
+    })
+
+    model.onDidChangeContent(() => {
+      if (model !== null) {
+        emit('change', model.getValue())
+      }
+    })
+  } catch {
+    loadError.value = true
+  }
+})
+
+watch(
+  () => props.value,
+  (value) => {
+    if (model !== null && model.getValue() !== value) {
+      model.setValue(value)
+    }
+  }
+)
+
+watch(
+  () => props.theme,
+  (theme) => {
+    api?.editor.setTheme(monacoTheme(theme))
+  }
+)
+
+onBeforeUnmount(() => {
+  disposed = true
+  editor?.dispose()
+  model?.dispose()
+  editor = null
+  model = null
+  api = null
+})
+
+function getViewState(): MonacoViewState | null {
+  return editor?.saveViewState() ?? null
+}
+
+function setViewState(state: MonacoViewState | null): void {
+  if (state !== null) {
+    editor?.restoreViewState(state)
+  }
+}
+
+function getValue(): string {
+  return model?.getValue() ?? props.value
+}
+
+function focus(): void {
+  editor?.focus()
+}
+
+defineExpose({ getViewState, setViewState, getValue, focus })
+</script>
+
+<template>
+  <div
+    class="monaco-editor"
+    data-testid="monaco-editor"
+    :data-language="modelLanguage"
+    :data-model-uri="modelUri"
+  >
+    <div
+      ref="host"
+      class="monaco-editor__host"
+    />
+    <p
+      v-if="loadError"
+      class="monaco-editor__error"
+      role="alert"
+    >
+      {{ t('lab.editorLoadFailure') }}
+    </p>
+  </div>
+</template>
+
+<style scoped>
+.monaco-editor {
+  height: 100%;
+  min-height: 12rem;
+}
+
+.monaco-editor__host {
+  height: 100%;
+}
+
+.monaco-editor__error {
+  margin: var(--space-2) 0 0;
+  color: var(--color-danger);
+}
+</style>

@@ -34,3 +34,14 @@ Main e preload são compilados como **CommonJS** porque o `package.json` não de
 Medido contra MySQL 8.4.13 em `127.0.0.1:3307`; evidência em `docs/spikes/20261029_s01-driver-evidence.md`. A versão instalada (3.24.6) é a mesma da matriz de T00 — nenhuma dependência mudou.
 As opções de conexão propostas (ADR 0011, status *proposto*) são `supportBigNumbers: true`, `bigNumberStrings: true`, `dateStrings: true` e `multipleStatements: false`. Sem as três primeiras, BIGINT acima de 2^53 perde precisão e datas são reinterpretadas no fuso do processo Node; sem a última, tolera-se que o padrão seja afrouxado mais tarde.
 Resta não medido nesta dependência: streaming/backpressure, memória com volume, cancelamento e estado de transação após falha de rede — S02–S04.
+
+## S05 — dependências de teste de componente (2026-10-30)
+
+Adicionadas duas devDependencies fora da matriz original, ambas exigidas para testar componentes Vue sem editor real: **@vue/test-utils 2.4.6** (MIT) e **jsdom 29.1.1** (MIT). Motivo: `@vue/test-utils` é o utilitário oficial de montagem de componentes Vue 3, e o Vitest 5 usa jsdom como ambiente de DOM. As duas ficam em `devDependencies` com versão exata e não entram no pacote do electron-builder.
+
+Duas restrições de engine medidas, não supostas, com o Node de build congelado em **22.18.0** e `.npmrc` com `engine-strict=true`:
+
+- `jsdom@30.x` exige `node ^22.22.2`; a **29.1.1** (`^20.19.0 || ^22.13.0 || >=24.0.0`) é a mais recente compatível.
+- `@vue/test-utils@2.5.1` dependia de `js-beautify ^2.0.0` → `2.0.3` → `nopt@10.0.1` (`node ^22.22.2 || ^24.15.0 || >=26.0.0`) e **abortava a instalação**. A **2.4.6** usa `js-beautify ^1.14.9` (resolvido em 1.15.4, MIT, `node >=14`) e instala com `engine-strict`. `@vue/test-utils@2.5.1` foi descartada por essa razão com aprovação do usuário (D-S05/S06-18 revisada em 2026-10-30: 2.4.6 em vez de 2.5.1).
+- `npm ls --depth=0` e `npm ci --dry-run` passam após a instalação. A instalação emite aviso de depreciação de `glob@10.5.0` (transitiva de `js-beautify`, apenas dev) e o `npm audit` reporta um advisory **crítico pré-existente** em `dompurify@3.4.15` via `monaco-editor@0.57.0`, fora do escopo desta mudança e registrado como risco — a correção sugerida pelo audit (`monaco-editor@0.56.0`) é um downgrade e não será feita sem decisão do usuário.
+O teste de componente cobre apenas componentes próprios com Monaco mockado; Monaco, worker e AG Grid reais continuam cobertos só pelo Playwright.

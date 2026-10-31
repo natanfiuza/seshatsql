@@ -1,0 +1,51 @@
+/*
+ * Design tokens. Colors are mirrored in src/renderer/src/grid/grid-theme.ts,
+ * because the AG Grid Theming API needs concrete color values; keep both in sync.
+ */
+
+:root {
+  --color-bg: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f0f1f4;
+  --color-border: #d7d9e0;
+  --color-text: #1c1e24;
+  --color-text-muted: #5b6070;
+  --color-accent: #2f6feb;
+  --color-accent-contrast: #ffffff;
+  --color-danger: #b3261e;
+  --color-focus: #2f6feb;
+  --grid-header-background: #f1f2f5;
+  --grid-odd-row-background: #fafafc;
+  --grid-selected-row-background: #dbe6ff;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #16181d;
+  --color-surface: #1e2128;
+  --color-surface-muted: #262a33;
+  --color-border: #353a45;
+  --color-text: #e8eaf0;
+  --color-text-muted: #a0a6b5;
+  --color-accent: #6d9bff;
+  --color-accent-contrast: #0d1117;
+  --color-danger: #ff8a80;
+  --color-focus: #6d9bff;
+  --grid-header-background: #242833;
+  --grid-odd-row-background: #21252d;
+  --grid-selected-row-background: #2b3d63;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
