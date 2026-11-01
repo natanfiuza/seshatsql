@@ -22,8 +22,9 @@ const TAB = {
 const CONNECTION: PersistedConnection = {
   id: 'local',
   name: 'Local',
-  color: '',
-  environment: 'dev',
+  color: '#2563eb',
+  environment: 'development',
+  environmentLabel: null,
   host: '127.0.0.1',
   port: 3306,
   user: 'root',
@@ -117,35 +118,101 @@ describe('tabs schema', () => {
 })
 
 describe('connections schema', () => {
-  it('accepts only OS-encrypted secrets', () => {
-    expect(
-      connectionsCodec.parse({ schemaVersion: 1, profiles: [CONNECTION] })
-    ).toMatchObject({ status: 'valid' })
+  it('accepts a v2 document and normalizes the color to lowercase', () => {
+    const parsed = connectionsCodec.parse({
+      schemaVersion: 2,
+      profiles: [{ ...CONNECTION, color: '#AABBCC' }]
+    })
 
+    expect(parsed.status).toBe('valid')
+    if (parsed.status === 'valid') {
+      expect(parsed.value.profiles[0]?.color).toBe('#aabbcc')
+    }
+  })
+
+  it('distinguishes v1 as older, v2 as current and v3 as future', () => {
+    expect(connectionsCodec.parse({ schemaVersion: 1, profiles: [] })).toMatchObject({
+      status: 'older',
+      version: 1
+    })
+
+    expect(connectionsCodec.parse({ schemaVersion: 2, profiles: [] })).toMatchObject({
+      status: 'valid'
+    })
+
+    expect(connectionsCodec.parse({ schemaVersion: 3, profiles: [] })).toMatchObject({
+      status: 'future',
+      version: 3
+    })
+  })
+
+  it('accepts only OS-encrypted secrets', () => {
     const plaintext = connectionsCodec.parse({
-      schemaVersion: 1,
+      schemaVersion: 2,
       profiles: [{ ...CONNECTION, password: 'hunter2' }]
     })
     expect(plaintext.status).toBe('invalid')
 
     const wrongScheme = connectionsCodec.parse({
-      schemaVersion: 1,
+      schemaVersion: 2,
       profiles: [{ ...CONNECTION, password: { scheme: 'plain', data: 'AAAA' } }]
     })
     expect(wrongScheme.status).toBe('invalid')
   })
 
+  it('requires a label only for the custom environment', () => {
+    const custom = connectionsCodec.parse({
+      schemaVersion: 2,
+      profiles: [{ ...CONNECTION, environment: 'custom', environmentLabel: 'Lab' }]
+    })
+    expect(custom.status).toBe('valid')
+
+    const customWithoutLabel = connectionsCodec.parse({
+      schemaVersion: 2,
+      profiles: [{ ...CONNECTION, environment: 'custom', environmentLabel: null }]
+    })
+    expect(customWithoutLabel.status).toBe('valid')
+
+    const labelOutsideCustom = connectionsCodec.parse({
+      schemaVersion: 2,
+      profiles: [{ ...CONNECTION, environmentLabel: 'Lab' }]
+    })
+    expect(labelOutsideCustom.status).toBe('invalid')
+
+    const emptyLabel = connectionsCodec.parse({
+      schemaVersion: 2,
+      profiles: [{ ...CONNECTION, environment: 'custom', environmentLabel: '' }]
+    })
+    expect(emptyLabel.status).toBe('invalid')
+  })
+
+  it('rejects unknown environments and colors outside the hex shape', () => {
+    expect(
+      connectionsCodec.parse({
+        schemaVersion: 2,
+        profiles: [{ ...CONNECTION, environment: 'dev' }]
+      }).status
+    ).toBe('invalid')
+
+    expect(
+      connectionsCodec.parse({
+        schemaVersion: 2,
+        profiles: [{ ...CONNECTION, color: 'blue' }]
+      }).status
+    ).toBe('invalid')
+  })
+
   it('rejects duplicate profile ids and out-of-range ports', () => {
     expect(
       connectionsCodec.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         profiles: [CONNECTION, { ...CONNECTION }]
       }).status
     ).toBe('invalid')
 
     expect(
       connectionsCodec.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         profiles: [{ ...CONNECTION, port: 70000 }]
       }).status
     ).toBe('invalid')
@@ -153,7 +220,7 @@ describe('connections schema', () => {
 
   it('never echoes received values in validation issues', () => {
     const parsed = connectionsCodec.parse({
-      schemaVersion: 1,
+      schemaVersion: 2,
       profiles: [{ ...CONNECTION, password: 'super-secret-value' }]
     })
     expect(parsed.status).toBe('invalid')
@@ -169,7 +236,7 @@ describe('connections schema', () => {
 
   it('formats zod issues as path and code only', () => {
     const parsed = connectionsCodec.parse({
-      schemaVersion: 1,
+      schemaVersion: 2,
       profiles: [{ ...CONNECTION, password: { scheme: 'dpapi', data: 'not base64!' } }]
     })
     expect(parsed.status).toBe('invalid')
@@ -186,8 +253,9 @@ describe('redaction', () => {
     expect(toPublicConnection(profile)).toEqual({
       id: 'local',
       name: 'Local',
-      color: '',
-      environment: 'dev',
+      color: '#2563eb',
+      environment: 'development',
+      environmentLabel: null,
       host: '127.0.0.1',
       port: 3306,
       user: 'root',

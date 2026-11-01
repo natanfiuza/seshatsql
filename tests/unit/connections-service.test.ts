@@ -5,20 +5,21 @@ import type { SecretProtector, SecretResult } from '../../src/application/persis
 import type { PersistenceStore } from '../../src/application/persistence/store'
 import { ConnectionsService } from '../../src/application/persistence/connections-service'
 import type {
-  ConnectionsV1,
+  ConnectionsV2,
   LoadedPersistence,
   PersistedConnection,
   SaveResult
 } from '../../src/domain/persistence/types'
 
 const CORRUPT_CIPHERTEXT = 'Q09SUlVQVA=='
+const GENERATED_ID = 'generated-id'
 
-class MemoryStore implements PersistenceStore<ConnectionsV1> {
-  value: ConnectionsV1 = { schemaVersion: 1, profiles: [] }
+class MemoryStore implements PersistenceStore<ConnectionsV2> {
+  value: ConnectionsV2 = { schemaVersion: 2, profiles: [] }
   writes = 0
   blocked = false
 
-  async load(): Promise<LoadedPersistence<ConnectionsV1>> {
+  async load(): Promise<LoadedPersistence<ConnectionsV2>> {
     return {
       status: 'loaded',
       value: structuredClone(this.value),
@@ -27,7 +28,7 @@ class MemoryStore implements PersistenceStore<ConnectionsV1> {
     }
   }
 
-  async save(next: ConnectionsV1): Promise<SaveResult> {
+  async save(next: ConnectionsV2): Promise<SaveResult> {
     if (this.blocked) {
       return { ok: false, reason: 'io-error' }
     }
@@ -67,10 +68,10 @@ class FakeProtector implements SecretProtector {
 
 function input(overrides: Partial<ConnectionInput> = {}): ConnectionInput {
   return {
-    id: 'local',
     name: 'Local',
-    color: '#ff0000',
-    environment: 'dev',
+    color: '#2563eb',
+    environment: 'development',
+    environmentLabel: null,
     host: '127.0.0.1',
     port: 3306,
     user: 'root',
@@ -78,14 +79,25 @@ function input(overrides: Partial<ConnectionInput> = {}): ConnectionInput {
   }
 }
 
-function setup(): { service: ConnectionsService; store: MemoryStore; protector: FakeProtector } {
+function setup(
+  newId: () => string = () => GENERATED_ID
+): { service: ConnectionsService; store: MemoryStore; protector: FakeProtector } {
   const store = new MemoryStore()
   const protector = new FakeProtector()
-  return { service: new ConnectionsService(store, protector), store, protector }
+  return { service: new ConnectionsService(store, protector, newId), store, protector }
+}
+
+async function createProfile(
+  service: ConnectionsService,
+  overrides: Partial<ConnectionInput> = {}
+): Promise<string> {
+  const result = await service.save(input(overrides))
+  expect(result.ok).toBe(true)
+  return result.ok ? result.profile.id : ''
 }
 
 describe('ConnectionsService', () => {
-  it('encrypts a password before writing and never returns it', async () => {
+  it('creates a profile, encrypts its password and never returns it', async () => {
     const { service, store } = setup()
 
     const result = await service.save(input({ password: 's3cret' }))
@@ -93,10 +105,11 @@ describe('ConnectionsService', () => {
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.profile).toEqual({
-        id: 'local',
+        id: GENERATED_ID,
         name: 'Local',
-        color: '#ff0000',
-        environment: 'dev',
+        color: '#2563eb',
+        environment: 'development',
+        environmentLabel: null,
         host: '127.0.0.1',
         port: 3306,
         user: 'root',
@@ -112,12 +125,24 @@ describe('ConnectionsService', () => {
     })
   })
 
+  it('generates an id for a new profile', async () => {
+    const { service, store } = setup(() => GENERATED_ID)
+
+    const result = await service.save(input({ name: 'New one' }))
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.profile.id).toBe(GENERATED_ID)
+    }
+    expect(store.value.profiles.map((profile) => profile.id)).toEqual([GENERATED_ID])
+  })
+
   it('keeps the existing ciphertext when no password is supplied', async () => {
     const { service, store } = setup()
-    await service.save(input({ password: 's3cret' }))
+    const id = await createProfile(service, { password: 's3cret' })
     const ciphertext = store.value.profiles[0]?.password
 
-    const result = await service.save(input({ name: 'Renamed' }))
+    const result = await service.save(input({ id, name: 'Renamed' }))
 
     expect(result.ok).toBe(true)
     expect(store.value.profiles[0]?.password).toEqual(ciphertext)
@@ -126,9 +151,9 @@ describe('ConnectionsService', () => {
 
   it('clears the password when null is supplied', async () => {
     const { service, store } = setup()
-    await service.save(input({ password: 's3cret' }))
+    const id = await createProfile(service, { password: 's3cret' })
 
-    const result = await service.save(input({ password: null }))
+    const result = await service.save(input({ id, password: null }))
 
     expect(result.ok).toBe(true)
     if (result.ok) {
@@ -157,18 +182,104 @@ describe('ConnectionsService', () => {
     })
   })
 
+  it('refuses to edit an id that does not exist', async () => {
+    const { service, store } = setup()
+
+    expect(await service.save(input({ id: 'missing' }))).toEqual({
+      ok: false,
+      reason: 'not-found'
+    })
+    expect(store.writes).toBe(0)
+  })
+
+  it('rejects duplicate names ignoring case and surrounding space', async () => {
+    const { service, store } = setup()
+    await createProfile(service, { name: 'Local' })
+
+    const result = await service.save(input({ name: '  local  ' }))
+
+    expect(result).toEqual({ ok: false, reason: 'duplicate-name' })
+    expect(store.writes).toBe(1)
+  })
+
+  it('allows a profile to change only the case of its own name', async () => {
+    const { service, store } = setup()
+    const id = await createProfile(service, { name: 'Local' })
+
+    const result = await service.save(input({ id, name: 'LOCAL' }))
+
+    expect(result.ok).toBe(true)
+    expect(store.value.profiles[0]?.name).toBe('LOCAL')
+  })
+
+  it('trims text fields and stores the custom environment label', async () => {
+    const { service, store } = setup()
+
+    const result = await service.save(
+      input({
+        name: '  Lab  ',
+        host: ' db.internal ',
+        user: ' app ',
+        environment: 'custom',
+        environmentLabel: '  Experiment  '
+      })
+    )
+
+    expect(result.ok).toBe(true)
+    expect(store.value.profiles[0]).toMatchObject({
+      name: 'Lab',
+      host: 'db.internal',
+      user: 'app',
+      environment: 'custom',
+      environmentLabel: 'Experiment'
+    })
+  })
+
+  it('drops the label for a non-custom environment', async () => {
+    const { service, store } = setup()
+
+    await service.save(input({ environment: 'production', environmentLabel: 'Wrong' }))
+
+    expect(store.value.profiles[0]?.environmentLabel).toBeNull()
+  })
+
+  it('rejects empty required text after trimming', async () => {
+    const { service, store } = setup()
+
+    expect(await service.save(input({ name: '   ' }))).toEqual({
+      ok: false,
+      reason: 'invalid'
+    })
+    expect(store.writes).toBe(0)
+  })
+
+  it('serializes concurrent creations instead of losing one', async () => {
+    let counter = 0
+    const { service, store } = setup(() => `id-${(counter += 1)}`)
+
+    const results = await Promise.all([
+      service.save(input({ name: 'One' })),
+      service.save(input({ name: 'Two' }))
+    ])
+
+    expect(results.every((result) => result.ok)).toBe(true)
+    expect(store.value.profiles.map((profile) => profile.name)).toEqual(['One', 'Two'])
+    expect(store.writes).toBe(2)
+  })
+
   it('lists profiles without password material', async () => {
     const { service } = setup()
-    await service.save(input({ password: 's3cret' }))
+    await createProfile(service, { password: 's3cret' })
 
     const snapshot = await service.list()
 
     expect(snapshot.profiles).toEqual([
       {
-        id: 'local',
+        id: GENERATED_ID,
         name: 'Local',
-        color: '#ff0000',
-        environment: 'dev',
+        color: '#2563eb',
+        environment: 'development',
+        environmentLabel: null,
         host: '127.0.0.1',
         port: 3306,
         user: 'root',
@@ -180,25 +291,25 @@ describe('ConnectionsService', () => {
 
   it('resolves plaintext only through the main-only use case', async () => {
     const { service } = setup()
-    await service.save(input({ password: 's3cret' }))
+    const id = await createProfile(service, { password: 's3cret' })
 
-    expect(await service.resolvePassword('local')).toEqual({ ok: true, value: 's3cret' })
+    expect(await service.resolvePassword(id)).toEqual({ ok: true, value: 's3cret' })
     expect(await service.resolvePassword('missing')).toEqual({ ok: false, reason: 'not-found' })
   })
 
   it('reports a corrupt ciphertext without deleting it', async () => {
     const { service, store } = setup()
-    await service.save(input({ password: 's3cret' }))
+    const id = await createProfile(service, { password: 's3cret' })
     store.value = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       profiles: store.value.profiles.map((profile): PersistedConnection =>
-        profile.id === 'local'
+        profile.id === id
           ? { ...profile, password: { scheme: 'dpapi', data: CORRUPT_CIPHERTEXT } }
           : profile
       )
     }
 
-    expect(await service.resolvePassword('local')).toEqual({
+    expect(await service.resolvePassword(id)).toEqual({
       ok: false,
       reason: 'decryption-failed'
     })
@@ -210,17 +321,17 @@ describe('ConnectionsService', () => {
 
   it('returns null for a profile without a password', async () => {
     const { service } = setup()
-    await service.save(input())
+    const id = await createProfile(service)
 
-    expect(await service.resolvePassword('local')).toEqual({ ok: true, value: null })
+    expect(await service.resolvePassword(id)).toEqual({ ok: true, value: null })
   })
 
   it('deletes an existing profile and reports a missing one', async () => {
     const { service, store } = setup()
-    await service.save(input())
+    const id = await createProfile(service)
 
-    expect(await service.delete('local')).toEqual({ ok: true })
+    expect(await service.delete(id)).toEqual({ ok: true })
     expect(store.value.profiles).toEqual([])
-    expect(await service.delete('local')).toEqual({ ok: false, reason: 'not-found' })
+    expect(await service.delete(id)).toEqual({ ok: false, reason: 'not-found' })
   })
 })

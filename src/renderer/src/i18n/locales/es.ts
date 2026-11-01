@@ -36,11 +36,13 @@ const messages: Messages = {
       viewObjectBrowser: 'Árbol de objetos',
       viewSqlLog: 'Registro SQL',
       viewHelpers: 'Panel auxiliar',
+      toolsConnections: 'Conexiones…',
       toolsPreferences: 'Preferencias',
       helpAbout: 'Acerca de'
     },
     toolbar: {
       label: 'Barra de herramientas',
+      connections: 'Conexiones',
       newQuery: 'Nueva consulta',
       open: 'Abrir',
       save: 'Guardar',
@@ -141,6 +143,88 @@ const messages: Messages = {
       confirmExit: 'Salir',
       cancel: 'Cancelar',
       dismiss: 'Descartar'
+    }
+  },
+  connections: {
+    title: 'Conexiones',
+    listLabel: 'Conexiones guardadas',
+    loading: 'Cargando conexiones…',
+    empty: 'No hay conexiones guardadas.',
+    notice: {
+      writeBlocked:
+        'No se pueden modificar los perfiles de conexión hasta resolver el problema de almacenamiento anterior.'
+    },
+    environment: {
+      development: 'Desarrollo',
+      staging: 'Preproducción',
+      production: 'Producción',
+      custom: 'Personalizado'
+    },
+    color: {
+      blue: 'Azul',
+      green: 'Verde',
+      amber: 'Ámbar',
+      red: 'Rojo',
+      violet: 'Violeta',
+      teal: 'Turquesa',
+      pink: 'Rosa',
+      gray: 'Gris'
+    },
+    fields: {
+      name: 'Nombre',
+      host: 'Servidor',
+      port: 'Puerto',
+      user: 'Usuario',
+      password: 'Contraseña',
+      passwordSaved: 'Hay una contraseña guardada para esta conexión.',
+      removePassword: 'Quitar contraseña guardada',
+      environment: 'Entorno',
+      environmentLabel: 'Nombre del entorno',
+      color: 'Color',
+      passwordPlaceholderKeep: 'Deje vacío para conservar la contraseña guardada',
+      passwordPlaceholderNone: 'Deje vacío para no guardar contraseña'
+    },
+    passwordHint:
+      'Windows cifra las contraseñas para el usuario y la máquina actuales. Copiar la carpeta de datos a otro lugar no las revela.',
+    unsaved: {
+      question: '¿Descartar los cambios sin guardar?'
+    },
+    delete: {
+      question: '¿Eliminar «{name}»?',
+      warning:
+        'Las pestañas se conservan. El SQL guardado que referencia esta conexión no podrá usar el perfil hasta que se asigne otro.'
+    },
+    actions: {
+      new: 'Nuevo',
+      delete: 'Eliminar',
+      save: 'Guardar',
+      cancel: 'Cancelar',
+      discard: 'Descartar',
+      keepEditing: 'Seguir editando',
+      confirmDelete: 'Eliminar conexión',
+      cancelDelete: 'Conservar conexión'
+    },
+    errors: {
+      duplicateName: 'Ya existe una conexión con este nombre.',
+      notFound: 'Esta conexión ya no existe. Recargue la lista e inténtelo de nuevo.',
+      invalid: 'Los datos de la conexión no son válidos.',
+      readonlyNewer:
+        'El archivo de conexiones fue escrito por una versión más reciente y no se puede modificar.',
+      readFailed: 'No se pudo leer el archivo de conexiones.',
+      fileTooLarge: 'El archivo de conexiones supera el límite de seguridad.',
+      ioError: 'No se pudo guardar el archivo de conexiones.',
+      encryptionUnavailable:
+        'Windows no pudo cifrar la contraseña. No se guardó nada.',
+      decryptionFailed: 'No se pudo descifrar la contraseña guardada.',
+      internal: 'Se produjo un error inesperado.',
+      required: 'Obligatorio.',
+      nameTooLong: 'Use como máximo 100 caracteres.',
+      hostTooLong: 'Use como máximo 253 caracteres.',
+      userTooLong: 'Use como máximo 128 caracteres.',
+      portRange: 'Use un puerto entre 1 y 65535.',
+      environmentLabelRequired: 'Describa el entorno personalizado.',
+      environmentLabelTooLong: 'Use como máximo 32 caracteres.',
+      colorRequired: 'Seleccione uno de los colores disponibles.'
     }
   },
   grid: {

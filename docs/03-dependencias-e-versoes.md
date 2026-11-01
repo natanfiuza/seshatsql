@@ -51,3 +51,7 @@ O teste de componente cobre apenas componentes próprios com Monaco mockado; Mon
 Nenhuma dependência nova e nenhuma versão alterada: `yaml 2.9.1` (ISC) e `zod 4.6.7` (MIT) já constavam da matriz do T00. O S06 apenas as usa em tempo de execução no processo main.
 Como `electron-builder.yml` exclui `node_modules` do asar, as duas precisam ser empacotadas pelo Vite: `electron.vite.config.ts` usa `externalizeDepsPlugin({ exclude: ['yaml', 'zod'] })`. Medição: `out/main/index.js` com 426 kB e asar do pacote com 8,6 MB (8,4 MB no S05); o app empacotado inicia, lê e grava a persistência sem `node_modules` ao lado.
 `mysql2 3.24.6` continua em `dependencies` e será tratado da mesma forma quando entrar no main (T04/T05).
+
+## T04 — perfis de conexão (2026-10-31)
+
+Nenhuma dependência nova e nenhuma versão alterada. O id dos perfis usa `crypto.randomUUID()` e a cifragem usa `safeStorage` — ambos nativos do runtime Electron/Node, sem pacote adicional. `yaml` e `zod` continuam em `dependencies` e já estavam empacotadas no main pelo S06. As devDependencies de teste (`@vue/test-utils 2.4.6`, `jsdom 29.1.1`) não mudaram nem entram no pacote; o novo modal usa apenas Vue e APIs do DOM. `mysql2 3.24.6` continua presente, ainda sem uso em `src`, porque conexão é T05. O mapa de licenças do T00 permanece válido: nenhuma licença nova foi introduzida.

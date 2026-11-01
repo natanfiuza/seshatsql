@@ -36,11 +36,13 @@ const messages: Messages = {
       viewObjectBrowser: "Explorateur d'objets",
       viewSqlLog: 'Journal SQL',
       viewHelpers: "Panneau d'aide",
+      toolsConnections: 'Connexions…',
       toolsPreferences: 'Préférences',
       helpAbout: 'À propos'
     },
     toolbar: {
       label: "Barre d'outils",
+      connections: 'Connexions',
       newQuery: 'Nouvelle requête',
       open: 'Ouvrir',
       save: 'Enregistrer',
@@ -141,6 +143,88 @@ const messages: Messages = {
       confirmExit: 'Quitter',
       cancel: 'Annuler',
       dismiss: 'Ignorer'
+    }
+  },
+  connections: {
+    title: 'Connexions',
+    listLabel: 'Connexions enregistrées',
+    loading: 'Chargement des connexions…',
+    empty: 'Aucune connexion enregistrée.',
+    notice: {
+      writeBlocked:
+        "Impossible de modifier les profils de connexion tant que le problème de stockage ci-dessus n'est pas résolu."
+    },
+    environment: {
+      development: 'Développement',
+      staging: 'Préproduction',
+      production: 'Production',
+      custom: 'Personnalisé'
+    },
+    color: {
+      blue: 'Bleu',
+      green: 'Vert',
+      amber: 'Ambre',
+      red: 'Rouge',
+      violet: 'Violet',
+      teal: 'Turquoise',
+      pink: 'Rose',
+      gray: 'Gris'
+    },
+    fields: {
+      name: 'Nom',
+      host: 'Hôte',
+      port: 'Port',
+      user: 'Utilisateur',
+      password: 'Mot de passe',
+      passwordSaved: 'Un mot de passe est enregistré pour cette connexion.',
+      removePassword: 'Supprimer le mot de passe enregistré',
+      environment: 'Environnement',
+      environmentLabel: "Nom de l'environnement",
+      color: 'Couleur',
+      passwordPlaceholderKeep: 'Laisser vide pour conserver le mot de passe enregistré',
+      passwordPlaceholderNone: "Laisser vide pour n'enregistrer aucun mot de passe"
+    },
+    passwordHint:
+      "Les mots de passe sont chiffrés par Windows pour l'utilisateur et la machine actuels. Copier le dossier de données ailleurs ne les révèle pas.",
+    unsaved: {
+      question: 'Abandonner les modifications non enregistrées ?'
+    },
+    delete: {
+      question: 'Supprimer « {name} » ?',
+      warning:
+        "Les onglets sont conservés. Le SQL enregistré qui référence cette connexion ne pourra pas utiliser le profil tant qu'un autre ne sera pas attribué."
+    },
+    actions: {
+      new: 'Nouveau',
+      delete: 'Supprimer',
+      save: 'Enregistrer',
+      cancel: 'Annuler',
+      discard: 'Abandonner',
+      keepEditing: 'Continuer la modification',
+      confirmDelete: 'Supprimer la connexion',
+      cancelDelete: 'Conserver la connexion'
+    },
+    errors: {
+      duplicateName: 'Une connexion portant ce nom existe déjà.',
+      notFound: "Cette connexion n'existe plus. Rechargez la liste et réessayez.",
+      invalid: 'Les données de connexion sont invalides.',
+      readonlyNewer:
+        'Le fichier de connexions a été écrit par une version plus récente et ne peut pas être modifié.',
+      readFailed: 'Impossible de lire le fichier de connexions.',
+      fileTooLarge: 'Le fichier de connexions dépasse la limite de sécurité.',
+      ioError: "Impossible d'enregistrer le fichier de connexions.",
+      encryptionUnavailable:
+        "Windows n'a pas pu chiffrer le mot de passe. Rien n'a été enregistré.",
+      decryptionFailed: 'Impossible de déchiffrer le mot de passe enregistré.',
+      internal: "Une erreur inattendue s'est produite.",
+      required: 'Obligatoire.',
+      nameTooLong: 'Utilisez au maximum 100 caractères.',
+      hostTooLong: 'Utilisez au maximum 253 caractères.',
+      userTooLong: 'Utilisez au maximum 128 caractères.',
+      portRange: 'Utilisez un port entre 1 et 65535.',
+      environmentLabelRequired: "Décrivez l'environnement personnalisé.",
+      environmentLabelTooLong: 'Utilisez au maximum 32 caractères.',
+      colorRequired: 'Sélectionnez une des couleurs disponibles.'
     }
   },
   grid: {

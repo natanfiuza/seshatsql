@@ -4,7 +4,7 @@
 | R01 | Electron, TypeScript, Vue 3; Windows 11 x64. |
 | R02 | Nome SeshatSQL; produto aberto/gratuito inicial; MPL-2.0. Recursos pagos futuros indefinidos. |
 | R03 | Host IP/nome, porta separada, usuário/senha; sem URI completa nem configuração TLS no MVP. Não enfraquecer TLS silenciosamente. |
-| R04 | Perfis múltiplos com nome, cor e ambiente desenvolvimento/homologação/produção/personalizado. Uma conexão lógica ativa. |
+| R04 | Perfis múltiplos com nome, cor e ambiente `development`/`staging`/`production`/`custom`; o personalizado exige rótulo livre. Uma conexão lógica ativa. |
 | R05 | Sessão MySQL compartilhada por abas; uma execução ativa; USE/SET/transações compartilhados; banco atual visível. |
 | R06 | Conexão auxiliar do mesmo perfil permitida para controle/cancelamento. |
 | R07 | Árvore de bancos/tabelas; tabela oferece dados/estrutura e ação de gerar SELECT sem executar. |
@@ -18,7 +18,7 @@
 | R15 | Botão cancelar; estado real, sem prometer cancelamento instantâneo/rollback de lote. |
 | R16 | Até 1000 linhas por grid; total tabela estimado rotulado; retornado exato e total sem LIMIT quando seguro, aceitando demora. Indisponível com motivo permitido. |
 | R17 | F5 contextual: árvore/estrutura/dados atualizam; editor não executa SQL. |
-| R18 | connections.yml, preferences.yml e tabs_states.yml no diretório de dados; nome do diretório novo pendente P01. |
+| R18 | connections.yml, preferences.yml e tabs_states.yml em `~/.seshatsql/data/`; P01 encerrada por D7-01 (ADR 0010). |
 | R19 | Senha protegida pelo SO; texto SQL legível em YAML permitido. |
 | R20 | Salvar abas com debounce 500 ms; restaurar texto/título/ordem/ativa/conexão/banco/cursor/seleção. Sem restaurar resultados nem executar. |
 | R21 | Inicialização restaura interface e aguarda usuário conectar. |

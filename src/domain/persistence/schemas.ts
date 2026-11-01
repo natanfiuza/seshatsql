@@ -1,10 +1,12 @@
 import { z } from 'zod'
 
 import {
+  CONNECTION_ENVIRONMENTS,
+  CONNECTIONS_SCHEMA_VERSION,
   PERSISTED_LOCALES,
   PERSISTED_THEMES,
   PERSISTENCE_SCHEMA_VERSION,
-  type ConnectionsV1,
+  type ConnectionsV2,
   type ParseOutcome,
   type PersistedConnection,
   type PersistedCursor,
@@ -19,6 +21,11 @@ const SHORT_TEXT = z.string().max(256)
 
 export const themeSchema = z.enum(PERSISTED_THEMES)
 export const localeSchema = z.enum(PERSISTED_LOCALES)
+export const connectionEnvironmentSchema = z.enum(CONNECTION_ENVIRONMENTS)
+export const connectionColorSchema = z
+  .string()
+  .regex(/^#[0-9a-fA-F]{6}$/)
+  .transform((value) => value.toLowerCase())
 
 const cursorSchema: z.ZodType<PersistedCursor> = z.strictObject({
   lineNumber: z.int().min(1),
@@ -92,20 +99,36 @@ const secretSchema = z.strictObject({
   data: base64Schema
 })
 
-const connectionSchema: z.ZodType<PersistedConnection> = z.strictObject({
-  id: ID,
-  name: z.string().min(1).max(100),
-  color: z.string().max(20),
-  environment: z.string().max(32),
-  host: z.string().min(1).max(253),
-  port: z.int().min(1).max(65535),
-  user: z.string().max(128),
-  password: secretSchema.nullable()
-})
+/**
+ * Persisted v2 profile. `custom` with a null label and an empty user are
+ * tolerated so legacy files can load; the IPC boundary and the form require
+ * the missing values before writing a new revision.
+ */
+const connectionSchema: z.ZodType<PersistedConnection> = z
+  .strictObject({
+    id: ID,
+    name: z.string().min(1).max(100),
+    color: connectionColorSchema,
+    environment: connectionEnvironmentSchema,
+    environmentLabel: z.string().min(1).max(32).nullable(),
+    host: z.string().min(1).max(253),
+    port: z.int().min(1).max(65535),
+    user: z.string().max(128),
+    password: secretSchema.nullable()
+  })
+  .superRefine((profile, context) => {
+    if (profile.environment !== 'custom' && profile.environmentLabel !== null) {
+      context.addIssue({
+        code: 'custom',
+        message: 'environmentLabel is only valid for custom',
+        path: ['environmentLabel']
+      })
+    }
+  })
 
 const connectionsSchema = z
   .strictObject({
-    schemaVersion: z.literal(PERSISTENCE_SCHEMA_VERSION),
+    schemaVersion: z.literal(CONNECTIONS_SCHEMA_VERSION),
     profiles: z.array(connectionSchema).max(500)
   })
   .superRefine((state, context) => {
@@ -120,7 +143,7 @@ const connectionsSchema = z
       }
       ids.add(profile.id)
     }
-  }) satisfies z.ZodType<ConnectionsV1>
+  }) satisfies z.ZodType<ConnectionsV2>
 
 const preferencesSchema: z.ZodType<PreferencesV1> = z.strictObject({
   schemaVersion: z.literal(PERSISTENCE_SCHEMA_VERSION),
@@ -148,7 +171,7 @@ export function formatIssues(error: z.ZodError): string[] {
   })
 }
 
-function parseVersioned<T>(raw: unknown, schema: z.ZodType<T>): ParseOutcome<T> {
+function parseVersioned<T>(raw: unknown, schema: z.ZodType<T>, currentVersion: number): ParseOutcome<T> {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
     return { status: 'invalid', issues: ['(root):invalid_type'] }
   }
@@ -157,10 +180,10 @@ function parseVersioned<T>(raw: unknown, schema: z.ZodType<T>): ParseOutcome<T> 
   if (typeof version !== 'number' || !Number.isInteger(version)) {
     return { status: 'invalid', issues: ['schemaVersion:invalid_type'] }
   }
-  if (version > PERSISTENCE_SCHEMA_VERSION) {
+  if (version > currentVersion) {
     return { status: 'future', version, raw }
   }
-  if (version < PERSISTENCE_SCHEMA_VERSION) {
+  if (version < currentVersion) {
     return { status: 'older', version, raw }
   }
 
@@ -173,17 +196,20 @@ function parseVersioned<T>(raw: unknown, schema: z.ZodType<T>): ParseOutcome<T> 
 
 export const preferencesCodec = {
   schema: preferencesSchema,
-  parse: (raw: unknown): ParseOutcome<PreferencesV1> => parseVersioned(raw, preferencesSchema)
+  parse: (raw: unknown): ParseOutcome<PreferencesV1> =>
+    parseVersioned(raw, preferencesSchema, PERSISTENCE_SCHEMA_VERSION)
 }
 
 export const tabsStateCodec = {
   schema: tabsStateSchema as z.ZodType<TabsStateV1>,
-  parse: (raw: unknown): ParseOutcome<TabsStateV1> => parseVersioned(raw, tabsStateSchema)
+  parse: (raw: unknown): ParseOutcome<TabsStateV1> =>
+    parseVersioned(raw, tabsStateSchema, PERSISTENCE_SCHEMA_VERSION)
 }
 
 export const connectionsCodec = {
-  schema: connectionsSchema as z.ZodType<ConnectionsV1>,
-  parse: (raw: unknown): ParseOutcome<ConnectionsV1> => parseVersioned(raw, connectionsSchema)
+  schema: connectionsSchema as z.ZodType<ConnectionsV2>,
+  parse: (raw: unknown): ParseOutcome<ConnectionsV2> =>
+    parseVersioned(raw, connectionsSchema, CONNECTIONS_SCHEMA_VERSION)
 }
 
 export interface VersionedCodec<T> {

@@ -18,6 +18,7 @@ import type { CopyOutcome } from '../grid/copy'
 import { setLocale, type SupportedLocale } from '../i18n'
 import type { ThemePreference } from '../theme/theme'
 import { createThemeController } from '../theme/useTheme'
+import ConnectionsDialog from './connections/ConnectionsDialog.vue'
 import LabEditorPane from './lab/LabEditorPane.vue'
 import LabObjectTree from './lab/LabObjectTree.vue'
 import LabResultsPane from './lab/LabResultsPane.vue'
@@ -28,6 +29,7 @@ import AppMenuBar from './shell/AppMenuBar.vue'
 import AppSplit from './shell/AppSplit.vue'
 import AppStatusBar from './shell/AppStatusBar.vue'
 import AppToolbar from './shell/AppToolbar.vue'
+import type { ShellAction } from './shell/menu'
 
 // Provisional main screen: the real workspace replaces it in T07/T09.
 const COPY_NOTICE_MS = 2500
@@ -94,6 +96,8 @@ const canRetry = computed(
 const dismissible = computed(() => startupWarnings.value.length > 0)
 
 const copyStatus = ref<'success' | 'failure' | null>(null)
+const connectionsOpen = ref(false)
+const connectionsReturnFocus = ref<HTMLElement | null>(null)
 
 const statusDetail = computed(() => {
   if (copyStatus.value === 'success') {
@@ -254,6 +258,18 @@ function updateActive(
   tabs.value = tabs.value.map((tab) => (tab.id === id ? { ...tab, ...patch } : tab))
 }
 
+function onShellAction(action: ShellAction): void {
+  if (action !== 'open-connections') {
+    return
+  }
+  // The menu entry disappears when its dropdown closes, so the stable
+  // toolbar button is the focus fallback once the dialog is dismissed.
+  connectionsReturnFocus.value = document.querySelector<HTMLElement>(
+    '[data-testid="connections-trigger"]'
+  )
+  connectionsOpen.value = true
+}
+
 function onThemeChange(value: ThemePreference): void {
   theme.setPreference(value)
 }
@@ -344,13 +360,14 @@ function onCopy(outcome: CopyOutcome): void {
       {{ t('app.name') }}
     </h1>
 
-    <AppMenuBar />
+    <AppMenuBar @activate="onShellAction" />
 
     <AppToolbar
       :theme="theme.preference.value"
       :locale="locale"
       @update:theme="onThemeChange"
       @update:locale="onLocaleChange"
+      @activate="onShellAction"
     />
 
     <PersistenceBanner
@@ -426,6 +443,12 @@ function onCopy(outcome: CopyOutcome): void {
     </div>
 
     <AppStatusBar :detail="statusDetail" />
+
+    <ConnectionsDialog
+      :open="connectionsOpen"
+      :return-focus="connectionsReturnFocus"
+      @close="connectionsOpen = false"
+    />
   </main>
 </template>
 

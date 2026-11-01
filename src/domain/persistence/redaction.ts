@@ -10,6 +10,7 @@ export function toPublicConnection(profile: PersistedConnection): PublicConnecti
     name: profile.name,
     color: profile.color,
     environment: profile.environment,
+    environmentLabel: profile.environmentLabel,
     host: profile.host,
     port: profile.port,
     user: profile.user,

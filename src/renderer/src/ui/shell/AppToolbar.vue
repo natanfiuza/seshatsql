@@ -9,10 +9,13 @@ import {
 import { isThemePreference, type ThemePreference } from '../../theme/theme'
 import AppIcon from './AppIcon.vue'
 import type { IconName } from './icons'
+import type { ShellAction } from './menu'
 
 interface ToolAction {
   readonly icon: IconName
   readonly labelKey: string
+  readonly action?: ShellAction
+  readonly testId?: string
 }
 
 const props = defineProps<{
@@ -23,6 +26,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:theme': [theme: ThemePreference]
   'update:locale': [locale: SupportedLocale]
+  activate: [action: ShellAction]
 }>()
 
 const { t } = useI18n()
@@ -43,7 +47,14 @@ const TOOL_GROUPS: ReadonlyArray<ReadonlyArray<ToolAction>> = [
     { icon: 'search', labelKey: 'shell.toolbar.search' }
   ],
   [{ icon: 'settings', labelKey: 'shell.toolbar.settings' }],
-  [{ icon: 'disconnected', labelKey: 'shell.toolbar.disconnect' }]
+  [
+    {
+      icon: 'disconnected',
+      labelKey: 'shell.toolbar.connections',
+      action: 'open-connections',
+      testId: 'connections-trigger'
+    }
+  ]
 ]
 
 const THEME_OPTIONS: ReadonlyArray<{ value: ThemePreference; labelKey: string }> = [
@@ -62,6 +73,12 @@ const LOCALE_LABEL_KEYS: Record<SupportedLocale, string> = {
 
 function disabledTitle(labelKey: string): string {
   return `${t(labelKey)} — ${t('shell.disabledHint')}`
+}
+
+function onAction(action: ToolAction): void {
+  if (action.action !== undefined) {
+    emit('activate', action.action)
+  }
 }
 
 function onThemeChange(event: Event): void {
@@ -100,9 +117,12 @@ function onLocaleChange(event: Event): void {
         :key="action.icon"
         type="button"
         class="toolbar__button"
-        aria-disabled="true"
-        :title="disabledTitle(action.labelKey)"
-        @click.prevent
+        :aria-disabled="action.action === undefined ? 'true' : undefined"
+        :title="
+          action.action === undefined ? disabledTitle(action.labelKey) : t(action.labelKey)
+        "
+        :data-testid="action.testId"
+        @click.prevent="onAction(action)"
       >
         <AppIcon :name="action.icon" />
       </button>

@@ -89,7 +89,7 @@ test('the first run creates the three versioned files', async () => {
       locale: 'en-US'
     })
     expect(await readYaml(join(dataDir, CONNECTIONS_FILE))).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       profiles: []
     })
 
@@ -275,6 +275,7 @@ test('a file from a newer version is never overwritten and a failed close keeps 
 test('passwords are stored as DPAPI ciphertext and never reach the renderer', async () => {
   const dataDir = await mkdtemp(join(tmpdir(), 'seshat-s06-dpapi-'))
   const first = await start(dataDir)
+  let profileId = ''
 
   try {
     const saved = await first.page.evaluate(() =>
@@ -284,16 +285,15 @@ test('passwords are stored as DPAPI ciphertext and never reach the renderer', as
             connections: {
               save: (input: Record<string, unknown>) => Promise<{
                 ok: boolean
-                profile?: { hasPassword: boolean }
+                profile?: { id: string; hasPassword: boolean }
               }>
             }
           }
         }
       ).seshat.connections.save({
-        id: 'local',
         name: 'Local',
-        color: '#ff0000',
-        environment: 'dev',
+        color: '#2563eb',
+        environment: 'development',
         host: '127.0.0.1',
         port: 3306,
         user: 'root',
@@ -301,6 +301,8 @@ test('passwords are stored as DPAPI ciphertext and never reach the renderer', as
       })
     )
     expect(saved).toMatchObject({ ok: true, profile: { hasPassword: true } })
+    profileId = saved.profile?.id ?? ''
+    expect(profileId.length).toBeGreaterThan(0)
 
     const listJson = await first.page.evaluate(async () =>
       JSON.stringify(
@@ -347,7 +349,7 @@ test('passwords are stored as DPAPI ciphertext and never reach the renderer', as
         ).seshat.connections.list()
       )
     )
-    expect(listJson).toContain('"id":"local"')
+    expect(listJson).toContain(`"id":"${profileId}"`)
     expect(listJson).toContain('"hasPassword":true')
     expect(listJson).not.toContain('e2e-secret')
   } finally {

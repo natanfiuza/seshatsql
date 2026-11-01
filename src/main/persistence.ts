@@ -15,6 +15,7 @@ import {
   preferencesInputSchema
 } from '../application/persistence/ipc-contract'
 import type { PersistenceStore } from '../application/persistence/store'
+import { migrateConnectionsV1ToV2 } from '../domain/persistence/connections-migration'
 import {
   connectionsCodec,
   preferencesCodec,
@@ -26,7 +27,7 @@ import {
   EMPTY_CONNECTIONS,
   EMPTY_TABS,
   PERSISTENCE_SCHEMA_VERSION,
-  type ConnectionsV1,
+  type ConnectionsV2,
   type LoadedPersistence,
   type PersistenceWarning,
   type PreferencesV1,
@@ -104,10 +105,11 @@ export async function createPersistenceRuntime(
     codec: tabsStateCodec,
     defaults: EMPTY_TABS
   })
-  const connectionsStore = new YamlFileStore<ConnectionsV1>({
+  const connectionsStore = new YamlFileStore<ConnectionsV2>({
     filePath: paths.connections,
     codec: connectionsCodec,
-    defaults: EMPTY_CONNECTIONS
+    defaults: EMPTY_CONNECTIONS,
+    migrations: { 1: migrateConnectionsV1ToV2 }
   })
 
   const [preferencesLoaded, tabsLoaded, connectionsLoaded] = await Promise.all([

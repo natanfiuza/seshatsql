@@ -1,7 +1,7 @@
 import { toPublicConnection } from '../../domain/persistence/redaction'
 import {
-  PERSISTENCE_SCHEMA_VERSION,
-  type ConnectionsV1,
+  CONNECTIONS_SCHEMA_VERSION,
+  type ConnectionsV2,
   type PersistedConnection,
   type PersistenceWarning,
   type PublicConnection,
@@ -14,6 +14,7 @@ import type { PersistenceStore } from './store'
 export type ConnectionFailureReason =
   | SaveFailureReason
   | SecretFailureReason
+  | 'duplicate-name'
   | 'not-found'
   | 'invalid'
   | 'internal'
@@ -35,6 +36,10 @@ export interface ConnectionsSnapshot {
   readonly warnings: readonly PersistenceWarning[]
 }
 
+function normalizeName(name: string): string {
+  return name.trim().toLowerCase()
+}
+
 /**
  * Application use cases for connection profiles. Passwords enter through
  * save(), are encrypted before touching the store, and are never returned.
@@ -43,8 +48,9 @@ export class ConnectionsService {
   private tail: Promise<unknown> = Promise.resolve()
 
   constructor(
-    private readonly store: PersistenceStore<ConnectionsV1>,
-    private readonly protector: SecretProtector
+    private readonly store: PersistenceStore<ConnectionsV2>,
+    private readonly protector: SecretProtector,
+    private readonly newId: () => string = () => globalThis.crypto.randomUUID()
   ) {}
 
   async list(): Promise<ConnectionsSnapshot> {
@@ -59,9 +65,29 @@ export class ConnectionsService {
     return this.enqueue(async () => {
       const loaded = await this.store.load()
       const profiles = [...loaded.value.profiles]
-      const index = profiles.findIndex((profile) => profile.id === input.id)
-      const existing = index >= 0 ? profiles[index] : undefined
+      const index = input.id === undefined ? -1 : profiles.findIndex((profile) => profile.id === input.id)
 
+      // Editing an id that no longer exists must never create a second profile.
+      if (input.id !== undefined && index < 0) {
+        return { ok: false, reason: 'not-found' }
+      }
+
+      const name = input.name.trim()
+      const host = input.host.trim()
+      const user = input.user.trim()
+      const environmentLabel = input.environment === 'custom' ? (input.environmentLabel?.trim() ?? null) : null
+      if (name.length === 0 || host.length === 0 || user.length === 0) {
+        return { ok: false, reason: 'invalid' }
+      }
+
+      const duplicate = profiles.some(
+        (profile, profileIndex) => profileIndex !== index && normalizeName(profile.name) === normalizeName(name)
+      )
+      if (duplicate) {
+        return { ok: false, reason: 'duplicate-name' }
+      }
+
+      const existing = index >= 0 ? profiles[index] : undefined
       let password = existing?.password ?? null
       if (input.password !== undefined) {
         if (input.password === null) {
@@ -76,13 +102,14 @@ export class ConnectionsService {
       }
 
       const profile: PersistedConnection = {
-        id: input.id,
-        name: input.name,
+        id: input.id ?? this.newId(),
+        name,
         color: input.color,
         environment: input.environment,
-        host: input.host,
+        environmentLabel,
+        host,
         port: input.port,
-        user: input.user,
+        user,
         password
       }
 
@@ -93,7 +120,7 @@ export class ConnectionsService {
       }
 
       const saved = await this.store.save({
-        schemaVersion: PERSISTENCE_SCHEMA_VERSION,
+        schemaVersion: CONNECTIONS_SCHEMA_VERSION,
         profiles
       })
       if (!saved.ok) {
@@ -111,7 +138,7 @@ export class ConnectionsService {
         return { ok: false, reason: 'not-found' }
       }
       const saved = await this.store.save({
-        schemaVersion: PERSISTENCE_SCHEMA_VERSION,
+        schemaVersion: CONNECTIONS_SCHEMA_VERSION,
         profiles
       })
       return saved.ok ? { ok: true } : { ok: false, reason: saved.reason }
