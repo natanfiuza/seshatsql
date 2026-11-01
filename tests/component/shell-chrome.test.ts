@@ -12,7 +12,7 @@ beforeEach(() => {
 })
 
 describe('AppToolbar', () => {
-  it('renders inert actions with tooltips and the two working combos', async () => {
+  it('keeps nine inert actions plus the connections entry and two working combos', async () => {
     const toolbar = mount(AppToolbar, {
       props: { theme: 'system', locale: 'en-US' },
       global: { plugins: [i18n] }
@@ -20,11 +20,17 @@ describe('AppToolbar', () => {
 
     const buttons = toolbar.findAll('.toolbar__button')
     expect(buttons).toHaveLength(10)
-    for (const button of buttons) {
+    for (const button of buttons.slice(0, 9)) {
       expect(button.attributes('aria-disabled')).toBe('true')
       expect(button.attributes('title')).toContain('Not available in this preview.')
     }
     expect(buttons[0]?.attributes('title')).toBe('New query — Not available in this preview.')
+
+    const connections = toolbar.get('[data-testid="connections-trigger"]')
+    expect(connections.attributes('aria-disabled')).toBeUndefined()
+    expect(connections.attributes('title')).toBe('Connections')
+    await connections.trigger('click')
+    expect(toolbar.emitted('activate')?.[0]).toEqual(['open-connections'])
 
     await toolbar.get('[data-testid="theme-select"]').setValue('dark')
     expect(toolbar.emitted('update:theme')?.[0]).toEqual(['dark'])

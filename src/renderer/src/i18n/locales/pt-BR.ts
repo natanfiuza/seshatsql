@@ -36,11 +36,13 @@ const messages: Messages = {
       viewObjectBrowser: 'Árvore de objetos',
       viewSqlLog: 'Registro SQL',
       viewHelpers: 'Painel auxiliar',
+      toolsConnections: 'Conexões…',
       toolsPreferences: 'Preferências',
       helpAbout: 'Sobre'
     },
     toolbar: {
       label: 'Barra de ferramentas',
+      connections: 'Conexões',
       newQuery: 'Nova consulta',
       open: 'Abrir',
       save: 'Salvar',
@@ -141,6 +143,88 @@ const messages: Messages = {
       confirmExit: 'Sair',
       cancel: 'Cancelar',
       dismiss: 'Dispensar'
+    }
+  },
+  connections: {
+    title: 'Conexões',
+    listLabel: 'Conexões salvas',
+    loading: 'Carregando conexões…',
+    empty: 'Nenhuma conexão salva.',
+    notice: {
+      writeBlocked:
+        'Não é possível alterar os perfis de conexão até resolver o problema de armazenamento acima.'
+    },
+    environment: {
+      development: 'Desenvolvimento',
+      staging: 'Homologação',
+      production: 'Produção',
+      custom: 'Personalizado'
+    },
+    color: {
+      blue: 'Azul',
+      green: 'Verde',
+      amber: 'Âmbar',
+      red: 'Vermelho',
+      violet: 'Violeta',
+      teal: 'Turquesa',
+      pink: 'Rosa',
+      gray: 'Cinza'
+    },
+    fields: {
+      name: 'Nome',
+      host: 'Servidor',
+      port: 'Porta',
+      user: 'Usuário',
+      password: 'Senha',
+      passwordSaved: 'Há uma senha salva para esta conexão.',
+      removePassword: 'Remover senha salva',
+      environment: 'Ambiente',
+      environmentLabel: 'Nome do ambiente',
+      color: 'Cor',
+      passwordPlaceholderKeep: 'Deixe em branco para manter a senha salva',
+      passwordPlaceholderNone: 'Deixe em branco para não salvar senha'
+    },
+    passwordHint:
+      'As senhas são cifradas pelo Windows para o usuário e a máquina atuais. Copiar a pasta de dados para outro lugar não revela a senha.',
+    unsaved: {
+      question: 'Descartar alterações não salvas?'
+    },
+    delete: {
+      question: 'Excluir “{name}”?',
+      warning:
+        'As abas serão mantidas. O SQL salvo que referencia esta conexão não poderá usar o perfil até que outro seja atribuído.'
+    },
+    actions: {
+      new: 'Novo',
+      delete: 'Excluir',
+      save: 'Salvar',
+      cancel: 'Cancelar',
+      discard: 'Descartar',
+      keepEditing: 'Continuar editando',
+      confirmDelete: 'Excluir conexão',
+      cancelDelete: 'Manter conexão'
+    },
+    errors: {
+      duplicateName: 'Já existe uma conexão com este nome.',
+      notFound: 'Esta conexão não existe mais. Recarregue a lista e tente novamente.',
+      invalid: 'Os dados da conexão são inválidos.',
+      readonlyNewer:
+        'O arquivo de conexões foi gravado por uma versão mais nova e não pode ser alterado.',
+      readFailed: 'Não foi possível ler o arquivo de conexões.',
+      fileTooLarge: 'O arquivo de conexões excede o limite de segurança.',
+      ioError: 'Não foi possível gravar o arquivo de conexões.',
+      encryptionUnavailable:
+        'O Windows não conseguiu cifrar a senha. Nada foi gravado.',
+      decryptionFailed: 'Não foi possível decifrar a senha salva.',
+      internal: 'Ocorreu um erro inesperado.',
+      required: 'Obrigatório.',
+      nameTooLong: 'Use no máximo 100 caracteres.',
+      hostTooLong: 'Use no máximo 253 caracteres.',
+      userTooLong: 'Use no máximo 128 caracteres.',
+      portRange: 'Use uma porta entre 1 e 65535.',
+      environmentLabelRequired: 'Descreva o ambiente personalizado.',
+      environmentLabelTooLong: 'Use no máximo 32 caracteres.',
+      colorRequired: 'Selecione uma das cores disponíveis.'
     }
   },
   grid: {

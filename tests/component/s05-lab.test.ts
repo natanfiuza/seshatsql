@@ -189,6 +189,7 @@ const mounted: VueWrapper[] = []
 
 function mountLab(state: StartupState = startupState()): VueWrapper {
   const wrapper = mount(S05Lab, {
+    attachTo: document.body,
     props: { startup: state },
     global: { plugins: [i18n] }
   })
@@ -467,6 +468,53 @@ describe('S05Lab', () => {
 
     await wrapper.get('.menubar__dropdown').trigger('keydown', { key: 'Escape' })
     expect(wrapper.find('.menubar__dropdown').exists()).toBe(false)
+  })
+
+  it('opens the connections dialog from the toolbar and returns focus on close', async () => {
+    const wrapper = mountLab()
+    const trigger = wrapper.get('[data-testid="connections-trigger"]').element as HTMLElement
+
+    await wrapper.get('[data-testid="connections-trigger"]').trigger('click')
+    await flushPromises()
+
+    const panel = document.querySelector<HTMLElement>('.dialog__panel')
+    expect(panel?.textContent).toContain('Connections')
+    expect(panel?.textContent).toContain('No saved connections.')
+
+    const cancel = Array.from(panel?.querySelectorAll<HTMLButtonElement>('button') ?? []).find(
+      (candidate) => candidate.textContent?.trim() === 'Cancel'
+    )
+    cancel?.click()
+    await flushPromises()
+
+    expect(document.querySelector('.dialog__panel')).toBeNull()
+    expect(document.activeElement).toBe(trigger)
+    expect(wrapper.get('[role="status"]').text()).toBe('Rows: 4')
+    expect(wrapper.text()).toContain('Disconnected')
+  })
+
+  it('opens the connections dialog from the Tools menu', async () => {
+    const wrapper = mountLab()
+
+    await wrapper.findAll('.menubar__button')[4]?.trigger('click')
+    const connections = wrapper
+      .findAll('.menubar__item')
+      .find((item) => item.text() === 'Connections…')
+    await connections?.trigger('click')
+    await flushPromises()
+
+    expect(document.querySelector('.dialog__panel')?.textContent).toContain('Connections')
+    expect(wrapper.find('.menubar__dropdown').exists()).toBe(false)
+
+    const panel = document.querySelector<HTMLElement>('.dialog__panel')
+    panel?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    )
+    await flushPromises()
+
+    expect(document.querySelector('.dialog__panel')).toBeNull()
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="connections-trigger"]').element)
+    expect(wrapper.text()).toContain('Disconnected')
   })
 
   it('expands a collapsed folder and filters the tree locally', async () => {

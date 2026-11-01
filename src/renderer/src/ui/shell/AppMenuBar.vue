@@ -2,7 +2,16 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, type ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { MENUS, type MenuDefinition } from './menu'
+import {
+  MENUS,
+  type MenuDefinition,
+  type MenuItemDefinition,
+  type ShellAction
+} from './menu'
+
+const emit = defineEmits<{
+  activate: [action: ShellAction]
+}>()
 
 const { t } = useI18n()
 
@@ -51,6 +60,14 @@ function close(restoreFocus: boolean): void {
 function focusMenuButton(index: number): void {
   const bounded = (index + MENUS.length) % MENUS.length
   menuButtons.value[bounded]?.focus()
+}
+
+function activateItem(item: MenuItemDefinition): void {
+  if (!item.enabled || item.action === undefined) {
+    return
+  }
+  emit('activate', item.action)
+  close(false)
 }
 
 function onMenuButtonClick(menu: MenuDefinition): void {
@@ -135,11 +152,14 @@ function onDropdownKeydown(event: KeyboardEvent, menuIndex: number): void {
       close(false)
       break
     case 'Enter':
-    case ' ':
-      // Every item is inert in this stage; keep the menu open instead of
-      // letting the browser fire a no-op activation.
+    case ' ': {
       event.preventDefault()
+      const item = MENUS[menuIndex]?.items[current]
+      if (item !== undefined) {
+        activateItem(item)
+      }
       break
+    }
     default:
       break
   }
@@ -203,11 +223,12 @@ onBeforeUnmount(() => {
           :key="item.id"
           type="button"
           class="menubar__item"
+          :class="{ 'menubar__item--enabled': item.enabled }"
           role="menuitem"
-          aria-disabled="true"
-          :title="t('shell.disabledHint')"
+          :aria-disabled="item.enabled ? undefined : 'true'"
+          :title="item.enabled ? undefined : t('shell.disabledHint')"
           tabindex="-1"
-          @click.prevent
+          @click.prevent="activateItem(item)"
         >
           {{ t(item.labelKey) }}
         </button>
@@ -275,6 +296,10 @@ onBeforeUnmount(() => {
   text-align: left;
   white-space: nowrap;
   cursor: default;
+}
+
+.menubar__item--enabled {
+  color: var(--text);
 }
 
 .menubar__item:focus {

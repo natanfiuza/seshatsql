@@ -5,6 +5,8 @@
 
 export const PERSISTENCE_SCHEMA_VERSION = 1
 
+export const CONNECTIONS_SCHEMA_VERSION = 2
+
 export const PERSISTED_THEMES = ['system', 'light', 'dark'] as const
 
 export type PersistedTheme = (typeof PERSISTED_THEMES)[number]
@@ -12,6 +14,10 @@ export type PersistedTheme = (typeof PERSISTED_THEMES)[number]
 export const PERSISTED_LOCALES = ['en-US', 'pt-BR', 'pt-PT', 'fr', 'es'] as const
 
 export type PersistedLocale = (typeof PERSISTED_LOCALES)[number]
+
+export const CONNECTION_ENVIRONMENTS = ['development', 'staging', 'production', 'custom'] as const
+
+export type ConnectionEnvironment = (typeof CONNECTION_ENVIRONMENTS)[number]
 
 export interface PreferencesV1 {
   readonly schemaVersion: 1
@@ -53,7 +59,8 @@ export interface PersistedSecret {
   readonly data: string
 }
 
-export interface PersistedConnection {
+/** Legacy v1 profile, used only by migration and its tests. */
+export interface PersistedConnectionV1 {
   readonly id: string
   readonly name: string
   readonly color: string
@@ -64,8 +71,26 @@ export interface PersistedConnection {
   readonly password: PersistedSecret | null
 }
 
+/** Legacy v1 document, migrated in memory by the YAML store. */
 export interface ConnectionsV1 {
   readonly schemaVersion: 1
+  readonly profiles: readonly PersistedConnectionV1[]
+}
+
+export interface PersistedConnection {
+  readonly id: string
+  readonly name: string
+  readonly color: string
+  readonly environment: ConnectionEnvironment
+  readonly environmentLabel: string | null
+  readonly host: string
+  readonly port: number
+  readonly user: string
+  readonly password: PersistedSecret | null
+}
+
+export interface ConnectionsV2 {
+  readonly schemaVersion: 2
   readonly profiles: readonly PersistedConnection[]
 }
 
@@ -74,7 +99,8 @@ export interface PublicConnection {
   readonly id: string
   readonly name: string
   readonly color: string
-  readonly environment: string
+  readonly environment: ConnectionEnvironment
+  readonly environmentLabel: string | null
   readonly host: string
   readonly port: number
   readonly user: string
@@ -146,7 +172,7 @@ export const EMPTY_TABS: TabsStateV1 = {
   tabs: []
 }
 
-export const EMPTY_CONNECTIONS: ConnectionsV1 = {
-  schemaVersion: PERSISTENCE_SCHEMA_VERSION,
+export const EMPTY_CONNECTIONS: ConnectionsV2 = {
+  schemaVersion: CONNECTIONS_SCHEMA_VERSION,
   profiles: []
 }

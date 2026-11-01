@@ -39,11 +39,13 @@ export type Messages = {
       viewObjectBrowser: string
       viewSqlLog: string
       viewHelpers: string
+      toolsConnections: string
       toolsPreferences: string
       helpAbout: string
     }
     toolbar: {
       label: string
+      connections: string
       newQuery: string
       open: string
       save: string
@@ -141,6 +143,83 @@ export type Messages = {
       confirmExit: string
       cancel: string
       dismiss: string
+    }
+  }
+  connections: {
+    title: string
+    listLabel: string
+    loading: string
+    empty: string
+    notice: {
+      writeBlocked: string
+    }
+    environment: {
+      development: string
+      staging: string
+      production: string
+      custom: string
+    }
+    color: {
+      blue: string
+      green: string
+      amber: string
+      red: string
+      violet: string
+      teal: string
+      pink: string
+      gray: string
+    }
+    fields: {
+      name: string
+      host: string
+      port: string
+      user: string
+      password: string
+      passwordSaved: string
+      removePassword: string
+      environment: string
+      environmentLabel: string
+      color: string
+      passwordPlaceholderKeep: string
+      passwordPlaceholderNone: string
+    }
+    passwordHint: string
+    unsaved: {
+      question: string
+    }
+    delete: {
+      question: string
+      warning: string
+    }
+    actions: {
+      new: string
+      delete: string
+      save: string
+      cancel: string
+      discard: string
+      keepEditing: string
+      confirmDelete: string
+      cancelDelete: string
+    }
+    errors: {
+      duplicateName: string
+      notFound: string
+      invalid: string
+      readonlyNewer: string
+      readFailed: string
+      fileTooLarge: string
+      ioError: string
+      encryptionUnavailable: string
+      decryptionFailed: string
+      internal: string
+      required: string
+      nameTooLong: string
+      hostTooLong: string
+      userTooLong: string
+      portRange: string
+      environmentLabelRequired: string
+      environmentLabelTooLong: string
+      colorRequired: string
     }
   }
   /** Strings handed to AG Grid through localeText; only keys we actually use. */

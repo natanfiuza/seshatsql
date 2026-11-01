@@ -2,6 +2,8 @@
 
 Status: **proposto**. Sustentado por medição real em `docs/spikes/20261031_s06-persistence-evidence.md` (testes unitários, e2e no app compilado, DPAPI real, reinício e pacote `win-unpacked`). As decisões foram aprovadas antes da implementação em `docs/plans/develop_natan/20261030_s05_s06_ui_persistencia_plansfacts.md` (D-S05/S06-08..13, 16, 19, 21). Não substitui a revisão humana.
 
+Atualização T04 (2026-10-31): `connections.yml` passou a `schemaVersion: 2` com migração v1→v2 (ADR 0017); `preferences.yml` e `tabs_states.yml` permanecem na versão 1. Onde este ADR diz “versão 1” ou “futuro > 1” para conexões, vale a versão corrente por codec.
+
 ## Contexto
 O S06 exige persistência real de preferências, abas e perfis de conexão nos três arquivos aprovados, com senha apenas cifrada pelo sistema operacional, YAML validado e versionado, escrita que nunca deixe o arquivo principal truncado, recuperação sem descarte silencioso e fechamento que não perca edições. O S05 não tinha persistência alguma; o S06 precisava provar tudo isso em Windows 11 com Electron 45.
 
@@ -12,14 +14,14 @@ O S06 exige persistência real de preferências, abas e perfis de conexão nos t
 |---|---|---|
 | 1 | Diretório `%USERPROFILE%\.seshatsql\data` (resolvido por `app.getPath('home')`), com override `SESHAT_DATA_DIR` somente de teste | caminho estável e fora do perfil Electron; o override nunca chega ao renderer |
 | 2 | Três arquivos: `preferences.yml`, `tabs_states.yml`, `connections.yml` | separam dados de vida longa, estado de sessão e segredos |
-| 3 | YAML com `schemaVersion: 1` no topo e schema Zod `.strictObject()` | campo desconhecido ou tipo errado é corrupção, não "quase válido" |
+| 3 | YAML com `schemaVersion` no topo (1 em preferências/abas; 2 em conexões desde o T04) e schema Zod `.strictObject()` | campo desconhecido ou tipo errado é corrupção, não "quase válido" |
 | 4 | Gravação sempre regenera o documento completo a partir do objeto validado | nenhuma mutação parcial de arquivo |
 
 ### D-S06-02 — Validação e versionamento
 | # | Regra | Por quê |
 |---|---|---|
 | 1 | `ParseOutcome` distingue `valid`, `future`, `older` e `invalid` | cada caso tem política própria |
-| 2 | Versão **futura** (`> 1`) nunca é gravada e produz aviso com a versão; o arquivo permanece intacto | uma versão nova pode ter campos que esta build apagaria |
+| 2 | Versão **futura** (acima da versão corrente do codec: > 1 em preferências/abas, > 2 em conexões) nunca é gravada e produz aviso com a versão; o arquivo permanece intacto | uma versão nova pode ter campos que esta build apagaria |
 | 3 | Versão **antiga** é migrada em memória e regravada somente depois de preservar o original em backup | requisito do plano (`migrated`) |
 | 4 | `invalid` dispara a cadeia de recuperação de D-S06-03 | nunca se assume que o arquivo pode ser descartado |
 | 5 | A UI recebe apenas códigos e caminhos (`PersistenceWarning`), nunca conteúdo de arquivo | o main não monta texto; o renderer traduz nos cinco catálogos |

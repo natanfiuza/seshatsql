@@ -36,11 +36,13 @@ const messages: Messages = {
       viewObjectBrowser: 'Árvore de objetos',
       viewSqlLog: 'Registo SQL',
       viewHelpers: 'Painel auxiliar',
+      toolsConnections: 'Ligações…',
       toolsPreferences: 'Preferências',
       helpAbout: 'Acerca de'
     },
     toolbar: {
       label: 'Barra de ferramentas',
+      connections: 'Ligações',
       newQuery: 'Nova consulta',
       open: 'Abrir',
       save: 'Guardar',
@@ -141,6 +143,88 @@ const messages: Messages = {
       confirmExit: 'Sair',
       cancel: 'Cancelar',
       dismiss: 'Dispensar'
+    }
+  },
+  connections: {
+    title: 'Ligações',
+    listLabel: 'Ligações guardadas',
+    loading: 'A carregar ligações…',
+    empty: 'Nenhuma ligação guardada.',
+    notice: {
+      writeBlocked:
+        'Não é possível alterar os perfis de ligação enquanto o problema de armazenamento acima não for resolvido.'
+    },
+    environment: {
+      development: 'Desenvolvimento',
+      staging: 'Pré-produção',
+      production: 'Produção',
+      custom: 'Personalizado'
+    },
+    color: {
+      blue: 'Azul',
+      green: 'Verde',
+      amber: 'Âmbar',
+      red: 'Vermelho',
+      violet: 'Violeta',
+      teal: 'Turquesa',
+      pink: 'Rosa',
+      gray: 'Cinzento'
+    },
+    fields: {
+      name: 'Nome',
+      host: 'Servidor',
+      port: 'Porta',
+      user: 'Utilizador',
+      password: 'Palavra-passe',
+      passwordSaved: 'Há uma palavra-passe guardada para esta ligação.',
+      removePassword: 'Remover palavra-passe guardada',
+      environment: 'Ambiente',
+      environmentLabel: 'Nome do ambiente',
+      color: 'Cor',
+      passwordPlaceholderKeep: 'Deixe em branco para manter a palavra-passe guardada',
+      passwordPlaceholderNone: 'Deixe em branco para não guardar palavra-passe'
+    },
+    passwordHint:
+      'As palavras-passe são cifradas pelo Windows para o utilizador e a máquina atuais. Copiar a pasta de dados para outro local não revela a palavra-passe.',
+    unsaved: {
+      question: 'Descartar alterações não guardadas?'
+    },
+    delete: {
+      question: 'Eliminar “{name}”?',
+      warning:
+        'Os separadores são mantidos. O SQL guardado que referencia esta ligação não poderá usar o perfil até que outro seja atribuído.'
+    },
+    actions: {
+      new: 'Nova',
+      delete: 'Eliminar',
+      save: 'Guardar',
+      cancel: 'Cancelar',
+      discard: 'Descartar',
+      keepEditing: 'Continuar a editar',
+      confirmDelete: 'Eliminar ligação',
+      cancelDelete: 'Manter ligação'
+    },
+    errors: {
+      duplicateName: 'Já existe uma ligação com este nome.',
+      notFound: 'Esta ligação já não existe. Recarregue a lista e tente novamente.',
+      invalid: 'Os dados da ligação são inválidos.',
+      readonlyNewer:
+        'O ficheiro de ligações foi gravado por uma versão mais recente e não pode ser alterado.',
+      readFailed: 'Não foi possível ler o ficheiro de ligações.',
+      fileTooLarge: 'O ficheiro de ligações excede o limite de segurança.',
+      ioError: 'Não foi possível guardar o ficheiro de ligações.',
+      encryptionUnavailable:
+        'O Windows não conseguiu cifrar a palavra-passe. Nada foi guardado.',
+      decryptionFailed: 'Não foi possível decifrar a palavra-passe guardada.',
+      internal: 'Ocorreu um erro inesperado.',
+      required: 'Obrigatório.',
+      nameTooLong: 'Utilize no máximo 100 caracteres.',
+      hostTooLong: 'Utilize no máximo 253 caracteres.',
+      userTooLong: 'Utilize no máximo 128 caracteres.',
+      portRange: 'Utilize uma porta entre 1 e 65535.',
+      environmentLabelRequired: 'Descreva o ambiente personalizado.',
+      environmentLabelTooLong: 'Utilize no máximo 32 caracteres.',
+      colorRequired: 'Selecione uma das cores disponíveis.'
     }
   },
   grid: {

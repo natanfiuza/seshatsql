@@ -77,6 +77,23 @@ describe('AppMenuBar', () => {
     expect(menu.findAll('.menubar__item')[0]?.element).toBe(document.activeElement)
   })
 
+  it('enables Connections in Tools and emits its shell action', async () => {
+    const menu = mountMenu()
+
+    await menu.findAll('.menubar__button')[4]?.trigger('click')
+
+    const items = menu.findAll('.menubar__item')
+    expect(items.map((item) => item.text())).toEqual(['Connections…', 'Preferences'])
+    expect(items[0]?.attributes('aria-disabled')).toBeUndefined()
+    expect(items[0]?.attributes('title')).toBeUndefined()
+    expect(items[1]?.attributes('aria-disabled')).toBe('true')
+
+    await items[0]?.trigger('click')
+
+    expect(menu.emitted('activate')?.[0]).toEqual(['open-connections'])
+    expect(menu.find('.menubar__dropdown').exists()).toBe(false)
+  })
+
   it('closes when the pointer goes down outside of the menu bar', async () => {
     const menu = mountMenu()
 

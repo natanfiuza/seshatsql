@@ -36,11 +36,13 @@ const messages: Messages = {
       viewObjectBrowser: 'Object browser',
       viewSqlLog: 'SQL log',
       viewHelpers: 'Helpers panel',
+      toolsConnections: 'Connections…',
       toolsPreferences: 'Preferences',
       helpAbout: 'About'
     },
     toolbar: {
       label: 'Application toolbar',
+      connections: 'Connections',
       newQuery: 'New query',
       open: 'Open',
       save: 'Save',
@@ -140,6 +142,88 @@ const messages: Messages = {
       confirmExit: 'Exit',
       cancel: 'Cancel',
       dismiss: 'Dismiss'
+    }
+  },
+  connections: {
+    title: 'Connections',
+    listLabel: 'Saved connections',
+    loading: 'Loading connections…',
+    empty: 'No saved connections.',
+    notice: {
+      writeBlocked:
+        'Connection profiles cannot be changed until the storage issue above is resolved.'
+    },
+    environment: {
+      development: 'Development',
+      staging: 'Staging',
+      production: 'Production',
+      custom: 'Custom'
+    },
+    color: {
+      blue: 'Blue',
+      green: 'Green',
+      amber: 'Amber',
+      red: 'Red',
+      violet: 'Violet',
+      teal: 'Teal',
+      pink: 'Pink',
+      gray: 'Gray'
+    },
+    fields: {
+      name: 'Name',
+      host: 'Host',
+      port: 'Port',
+      user: 'User',
+      password: 'Password',
+      passwordSaved: 'A password is saved for this connection.',
+      removePassword: 'Remove saved password',
+      environment: 'Environment',
+      environmentLabel: 'Environment name',
+      color: 'Color',
+      passwordPlaceholderKeep: 'Leave blank to keep the saved password',
+      passwordPlaceholderNone: 'Leave blank to save no password'
+    },
+    passwordHint:
+      'Passwords are encrypted by Windows for the current user and machine. Copying the data folder elsewhere does not reveal them.',
+    unsaved: {
+      question: 'Discard unsaved changes?'
+    },
+    delete: {
+      question: 'Delete “{name}”?',
+      warning:
+        'Tabs are kept. Saved SQL that references this connection cannot use the profile until another one is assigned.'
+    },
+    actions: {
+      new: 'New',
+      delete: 'Delete',
+      save: 'Save',
+      cancel: 'Cancel',
+      discard: 'Discard',
+      keepEditing: 'Keep editing',
+      confirmDelete: 'Delete connection',
+      cancelDelete: 'Keep connection'
+    },
+    errors: {
+      duplicateName: 'A connection with this name already exists.',
+      notFound: 'This connection no longer exists. Reload the list and try again.',
+      invalid: 'The connection data is invalid.',
+      readonlyNewer:
+        'The connection file was written by a newer version and cannot be changed.',
+      readFailed: 'The connection file could not be read.',
+      fileTooLarge: 'The connection file exceeds the safety limit.',
+      ioError: 'Could not save the connection file.',
+      encryptionUnavailable:
+        'Windows could not encrypt the password. Nothing was saved.',
+      decryptionFailed: 'The saved password could not be decrypted.',
+      internal: 'An unexpected error occurred.',
+      required: 'Required.',
+      nameTooLong: 'Use at most 100 characters.',
+      hostTooLong: 'Use at most 253 characters.',
+      userTooLong: 'Use at most 128 characters.',
+      portRange: 'Use a port from 1 to 65535.',
+      environmentLabelRequired: 'Describe the custom environment.',
+      environmentLabelTooLong: 'Use at most 32 characters.',
+      colorRequired: 'Select one of the available colors.'
     }
   },
   grid: {

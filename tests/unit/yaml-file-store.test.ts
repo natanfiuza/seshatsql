@@ -5,9 +5,12 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 
-import { preferencesCodec } from '../../src/domain/persistence/schemas'
+import { migrateConnectionsV1ToV2 } from '../../src/domain/persistence/connections-migration'
+import { connectionsCodec, preferencesCodec } from '../../src/domain/persistence/schemas'
 import {
   DEFAULT_PREFERENCES,
+  EMPTY_CONNECTIONS,
+  type ConnectionsV2,
   type PreferencesV1
 } from '../../src/domain/persistence/types'
 import {
@@ -145,6 +148,69 @@ describe('YamlFileStore', () => {
     expect(loaded.warnings).toContainEqual({ code: 'migrated', paths: [filePath], version: 0 })
     expect(await readYaml(filePath)).toEqual(DARK)
     expect(await readYaml(`${filePath}.bak`)).toMatchObject({ schemaVersion: 0 })
+  })
+
+  it('migrates a valid v1 connections file and preserves the original as .bak', async () => {
+    const legacyText = stringifyYaml({
+      schemaVersion: 1,
+      profiles: [
+        {
+          id: 'local',
+          name: 'Local',
+          color: '',
+          environment: 'dev',
+          host: '127.0.0.1',
+          port: 3306,
+          user: '',
+          password: null
+        }
+      ]
+    })
+    await writeFile(filePath, legacyText, 'utf8')
+    const store = new YamlFileStore<ConnectionsV2>({
+      filePath,
+      codec: connectionsCodec,
+      defaults: EMPTY_CONNECTIONS,
+      migrations: { 1: migrateConnectionsV1ToV2 }
+    })
+
+    const loaded = await store.load()
+
+    expect(loaded.status).toBe('loaded')
+    expect(loaded.warnings).toContainEqual({ code: 'migrated', paths: [filePath], version: 1 })
+    expect(loaded.value.profiles[0]).toMatchObject({
+      environment: 'development',
+      environmentLabel: null,
+      color: '#2563eb',
+      user: ''
+    })
+    expect(await readYaml(filePath)).toMatchObject({ schemaVersion: 2 })
+    expect(await readFile(`${filePath}.bak`, 'utf8')).toBe(legacyText)
+    expect((await names()).some((name) => name.includes('.corrupt-'))).toBe(false)
+  })
+
+  it('quarantines an invalid v1 connections file instead of discarding it', async () => {
+    const invalidText = stringifyYaml({
+      schemaVersion: 1,
+      profiles: [{ id: 'local', name: 'Local', password: 'hunter2' }]
+    })
+    await writeFile(filePath, invalidText, 'utf8')
+    const store = new YamlFileStore<ConnectionsV2>({
+      filePath,
+      codec: connectionsCodec,
+      defaults: EMPTY_CONNECTIONS,
+      migrations: { 1: migrateConnectionsV1ToV2 }
+    })
+
+    const loaded = await store.load()
+
+    expect(loaded.status).toBe('defaults')
+    expect(loaded.warnings.map((warning) => warning.code)).toContain('quarantined')
+    const quarantined = (await names()).find((name) => name.includes('.corrupt-'))
+    expect(quarantined).toBeDefined()
+    if (quarantined !== undefined) {
+      expect(await readFile(join(directory, quarantined), 'utf8')).toBe(invalidText)
+    }
   })
 
   it('quarantines an older file when no migration exists', async () => {
