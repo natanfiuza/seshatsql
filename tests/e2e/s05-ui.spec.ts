@@ -60,8 +60,9 @@ test('loads the shell through the app:// scheme in a desktop-sized window', asyn
   await expect(page.locator('[data-testid="result-grid"] .ag-row')).toHaveCount(4)
   await expect(page.locator('[data-testid="result-grid"] .ag-header-cell').first()).toBeVisible()
   await expect(page.locator('.menubar__button').first()).toHaveText('File')
-  await expect(page.locator('.statusbar')).toContainText('Sample data · SeshatSQL')
-  await expect(page.locator('.object-tree')).toContainText('seshat_lab (sample)')
+  await expect(page.locator('.statusbar')).toContainText('Connected (simulation) · Seshat Lab')
+  await expect(page.locator('.object-tree')).toContainText('Seshat Lab')
+  await expect(page.locator('.object-tree')).toContainText('Active')
 })
 
 test('keeps the observed desktop density and never scrolls the page', async () => {
@@ -253,7 +254,7 @@ test('the language switch updates menu, tree, status and the grid live', async (
 
   await expect(page.locator('.menubar__button').first()).toHaveText('Fichier')
   await expect(page.locator('.object-tree')).toContainText('Tables (3)')
-  await expect(page.locator('.statusbar')).toContainText('Déconnecté')
+  await expect(page.locator('.statusbar')).toContainText('Connecté (simulation) · Seshat Lab')
   await expect(page.locator('.statusbar')).toContainText('Lignes : 4')
   await expect(page.locator('[data-testid="locale-select"]')).toHaveAttribute(
     'title',

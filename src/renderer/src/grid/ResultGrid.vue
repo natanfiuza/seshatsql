@@ -6,6 +6,8 @@ import type {
   ColDef,
   GridApi,
   GridReadyEvent,
+  RowClickedEvent,
+  RowDoubleClickedEvent,
   RowSelectionOptions,
   ValueFormatterParams,
   ValueGetterParams
@@ -19,14 +21,23 @@ import { createGridLocaleText } from './grid-locale'
 import { createGridTheme } from './grid-theme'
 import { formatCellForDisplay, type GridColumnDescriptor } from './tsv'
 
-const props = defineProps<{
-  columns: readonly GridColumnDescriptor[]
-  rows: readonly Record<string, unknown>[]
-  theme: ResolvedTheme
-  locale: SupportedLocale
-}>()
+const props = withDefaults(
+  defineProps<{
+    columns: readonly GridColumnDescriptor[]
+    rows: readonly Record<string, unknown>[]
+    theme: ResolvedTheme
+    locale: SupportedLocale
+    showRowNumbers?: boolean
+    testId?: string
+  }>(),
+  { showRowNumbers: true, testId: 'result-grid' }
+)
 
-const emit = defineEmits<{ copy: [outcome: CopyOutcome] }>()
+const emit = defineEmits<{
+  copy: [outcome: CopyOutcome]
+  rowClick: [row: Record<string, unknown>]
+  rowDoubleClick: [row: Record<string, unknown>]
+}>()
 
 const host = ref<HTMLDivElement | null>(null)
 let gridApi: GridApi | null = null
@@ -40,22 +51,8 @@ const gridTheme = ref(createGridTheme(props.theme))
  */
 const ROW_NUMBER_FIELD = '__rowNumber'
 
-const columnDefs = computed<ColDef[]>(() => [
-  {
-    field: ROW_NUMBER_FIELD,
-    headerName: '#',
-    pinned: 'left',
-    width: 44,
-    minWidth: 44,
-    maxWidth: 44,
-    sortable: false,
-    resizable: false,
-    suppressMovable: true,
-    lockPosition: true,
-    cellClass: 'result-grid__row-number',
-    valueGetter: (params: ValueGetterParams) => (params.node?.rowIndex ?? 0) + 1
-  },
-  ...props.columns.map((column) => ({
+const columnDefs = computed<ColDef[]>(() => {
+  const columns: ColDef[] = props.columns.map((column) => ({
     field: column.field,
     headerName: column.header,
     sortable: true,
@@ -65,7 +62,29 @@ const columnDefs = computed<ColDef[]>(() => [
     cellClass: column.align === 'right' ? 'result-grid__align-right' : undefined,
     valueFormatter: (params: ValueFormatterParams) => formatCellForDisplay(params.value)
   }))
-])
+
+  if (!props.showRowNumbers) {
+    return columns
+  }
+
+  return [
+    {
+      field: ROW_NUMBER_FIELD,
+      headerName: '#',
+      pinned: 'left',
+      width: 44,
+      minWidth: 44,
+      maxWidth: 44,
+      sortable: false,
+      resizable: false,
+      suppressMovable: true,
+      lockPosition: true,
+      cellClass: 'result-grid__row-number',
+      valueGetter: (params: ValueGetterParams) => (params.node?.rowIndex ?? 0) + 1
+    },
+    ...columns
+  ]
+})
 
 const defaultColDef = computed<ColDef>(() => ({
   suppressHeaderMenuButton: true,
@@ -93,6 +112,16 @@ const rowData = computed<Record<string, unknown>[]>(() => [...props.rows])
 
 function onGridReady(event: GridReadyEvent): void {
   gridApi = event.api
+  event.api.addEventListener?.('rowClicked', (rowEvent: RowClickedEvent) => {
+    if (rowEvent.data !== undefined) {
+      emit('rowClick', rowEvent.data as Record<string, unknown>)
+    }
+  })
+  event.api.addEventListener?.('rowDoubleClicked', (rowEvent: RowDoubleClickedEvent) => {
+    if (rowEvent.data !== undefined) {
+      emit('rowDoubleClick', rowEvent.data as Record<string, unknown>)
+    }
+  })
 }
 
 watch(
@@ -155,7 +184,7 @@ onBeforeUnmount(() => {
   <div
     ref="host"
     class="result-grid"
-    data-testid="result-grid"
+    :data-testid="testId"
     @keydown="onKeyDown"
   >
     <AgGridVue

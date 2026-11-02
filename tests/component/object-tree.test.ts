@@ -75,6 +75,57 @@ describe('ObjectTree', () => {
     expect(tree.text()).toContain('No matching objects')
   })
 
+  it('emits activation for connection, database and object rows but not folders', async () => {
+    const typedNodes: readonly TreeSourceNode[] = [
+      {
+        id: 'connection',
+        label: 'Seshat Lab',
+        nodeKind: 'connection',
+        badge: 'Active',
+        children: [
+          {
+            id: 'database:seshat_lab',
+            label: 'seshat_lab',
+            nodeKind: 'database',
+            children: [
+              {
+                id: 'folder:tables',
+                label: 'Tables',
+                nodeKind: 'folder',
+                children: [{ id: 'table:customers', label: 'customers', nodeKind: 'table' }]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    const tree = mount(ObjectTree, {
+      attachTo: document.body,
+      props: {
+        nodes: typedNodes,
+        label: 'Objects',
+        defaultExpanded: ['connection', 'database:seshat_lab']
+      },
+      global: { plugins: [i18n] }
+    })
+    wrapper = tree
+
+    expect(tree.get('.object-tree__badge').text()).toBe('Active')
+
+    await tree.get('[data-node-id="connection"]').trigger('click')
+    expect(tree.emitted('activate')?.at(-1)).toEqual(['connection'])
+
+    await tree.get('[data-node-id="folder:tables"] .object-tree__box').trigger('click')
+    expect(tree.emitted('activate')).toHaveLength(1)
+    expect(tree.get('[data-node-id="folder:tables"]').attributes('aria-expanded')).toBe('true')
+
+    await tree.get('[data-node-id="table:customers"]').trigger('click')
+    expect(tree.emitted('activate')?.at(-1)).toEqual(['table:customers'])
+
+    await tree.get('[data-node-id="database:seshat_lab"]').trigger('keydown', { key: 'Enter' })
+    expect(tree.emitted('activate')?.at(-1)).toEqual(['database:seshat_lab'])
+  })
+
   it('supports keyboard expansion, navigation and selection', async () => {
     const tree = mountTree()
     const root = tree.get('[data-node-id="root"]')

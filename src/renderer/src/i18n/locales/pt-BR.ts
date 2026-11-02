@@ -73,16 +73,22 @@ const messages: Messages = {
     tree: {
       label: 'Árvore de objetos',
       filterLabel: 'Filtrar objetos',
-      sampleRoot: 'seshat_lab (exemplo)',
+      sampleRoot: 'Seshat Lab',
       tables: 'Tabelas ({count})',
       views: 'Views ({count})',
+      events: 'Eventos ({count})',
+      activeBadge: 'Ativa',
       empty: 'Nenhum objeto',
       noMatches: 'Nenhum objeto correspondente'
     },
     tabs: {
       queryOne: 'Consulta 1',
+      queryNumber: 'Consulta {number}',
       resultOne: 'Resultado 1',
-      addTab: 'Nova aba'
+      addTab: 'Nova aba',
+      close: 'Fechar {title}',
+      newQuery: 'Nova consulta',
+      workspaceLabel: 'Abas do workspace'
     },
     editor: {
       label: 'Editor SQL',
@@ -104,6 +110,7 @@ const messages: Messages = {
     },
     status: {
       disconnected: 'Desconectado',
+      simulated: 'Conectado (simulação)',
       rows: 'Linhas: {count}',
       sample: 'Dados de exemplo'
     },
@@ -115,6 +122,167 @@ const messages: Messages = {
       tree: 'Redimensionar árvore de objetos',
       editor: 'Redimensionar editor',
       log: 'Redimensionar registro SQL'
+    },
+    workspace: {
+      demoNotice: 'Demonstração — somente leitura',
+      notAvailable: 'Não disponível',
+      openData: 'Abrir dados',
+      sectionsLabel: 'Seções',
+      units: {
+        byte: 'B',
+        kilobyte: 'KB',
+        megabyte: 'MB',
+        gigabyte: 'GB',
+        terabyte: 'TB'
+      },
+      values: {
+        yes: 'Sim',
+        no: 'Não',
+        global: 'Global',
+        session: 'Sessão',
+        none: 'Nenhum',
+        never: 'Nunca',
+        definer: 'Definidor',
+        enabled: 'Ativado',
+        recurring: 'Recorrente',
+        preserve: 'Preservar'
+      },
+      objectTypes: {
+        table: 'Tabela',
+        view: 'Visão',
+        event: 'Evento'
+      },
+      connection: {
+        title: 'Conexão: {name}',
+        databases: 'Bancos de dados ({count})',
+        variables: 'Variáveis ({count})',
+        status: 'Status ({count})',
+        processes: 'Processos ({count})',
+        commandStats: 'Estatísticas de comandos ({count})',
+        databasesGrid: {
+          name: 'Nome',
+          tables: 'Tabelas',
+          views: 'Views',
+          size: 'Tamanho',
+          collation: 'Collation'
+        },
+        variablesGrid: {
+          variable: 'Variável',
+          value: 'Valor',
+          scope: 'Escopo'
+        },
+        statusGrid: {
+          variable: 'Variável',
+          value: 'Valor'
+        },
+        processesGrid: {
+          id: 'ID',
+          user: 'Usuário',
+          host: 'Host',
+          database: 'Banco',
+          command: 'Comando',
+          time: 'Tempo',
+          state: 'Estado',
+          info: 'Info'
+        },
+        commandStatsGrid: {
+          command: 'Comando',
+          total: 'Total',
+          perHour: 'Por hora',
+          perSecond: 'Por segundo'
+        }
+      },
+      database: {
+        title: 'Banco de dados: {name}',
+        columns: {
+          name: 'Nome',
+          rows: 'Registros',
+          size: 'Tamanho',
+          createdAt: 'Criado em',
+          updatedAt: 'Atualizado em',
+          engine: 'Motor',
+          comment: 'Comentário',
+          type: 'Tipo'
+        },
+        empty: 'Nenhum objeto'
+      },
+      object: {
+        tableTitle: 'Tabela: {name}',
+        viewTitle: 'Visão: {name}',
+        eventTitle: 'Evento: {name}',
+        dataTitle: 'Dados: {name}',
+        createCodeLabel: 'Código CREATE de {name}',
+        alterCodeLabel: 'Código ALTER de {name}',
+        subTabs: {
+          basic: 'Básico',
+          options: 'Opções',
+          indexes: 'Índices',
+          foreignKeys: 'Chaves estrangeiras',
+          checks: 'Restrições CHECK',
+          partitions: 'Partições',
+          createSql: 'Código CREATE',
+          alterSql: 'Código ALTER'
+        },
+        fields: {
+          name: 'Nome',
+          database: 'Banco de dados',
+          engine: 'Motor',
+          collation: 'Collation',
+          charset: 'Conjunto de caracteres',
+          rows: 'Registros',
+          size: 'Tamanho',
+          createdAt: 'Criado em',
+          updatedAt: 'Atualizado em',
+          comment: 'Comentário',
+          rowFormat: 'Formato da linha',
+          autoIncrement: 'Auto incremento',
+          compression: 'Compressão',
+          tablespace: 'Tablespace',
+          encryption: 'Criptografia',
+          definer: 'Definidor',
+          security: 'Segurança SQL',
+          checkOption: 'Opção de verificação',
+          algorithm: 'Algoritmo',
+          updatable: 'Atualizável',
+          status: 'Status',
+          type: 'Tipo',
+          schedule: 'Agendamento',
+          starts: 'Início',
+          ends: 'Término',
+          onCompletion: 'Ao concluir',
+          lastExecuted: 'Última execução'
+        },
+        indexes: {
+          name: 'Nome',
+          columns: 'Colunas',
+          unique: 'Único',
+          type: 'Tipo'
+        },
+        foreignKeys: {
+          name: 'Nome',
+          column: 'Coluna',
+          referencedTable: 'Tabela referenciada',
+          referencedColumn: 'Coluna referenciada',
+          onUpdate: 'Ao atualizar',
+          onDelete: 'Ao excluir'
+        },
+        checks: {
+          name: 'Nome',
+          expression: 'Expressão',
+          enforced: 'Aplicada'
+        },
+        partitions: {
+          name: 'Nome',
+          method: 'Método',
+          expression: 'Expressão',
+          rows: 'Registros',
+          size: 'Tamanho'
+        },
+        emptyGrid: 'Nenhuma linha'
+      },
+      data: {
+        gridLabel: 'Dados de {name}'
+      }
     }
   },
   persistence: {

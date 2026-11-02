@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-defineProps<{ detail: string }>()
+defineProps<{ detail: string; connectionName: string }>()
 
 const { t } = useI18n()
 </script>
 
 <template>
   <footer class="statusbar">
-    <span class="statusbar__segment">
-      {{ t('shell.status.disconnected') }}
+    <span class="statusbar__segment statusbar__segment--connection">
+      {{ t('shell.status.simulated') }} · {{ connectionName }}
     </span>
     <span
       class="statusbar__segment statusbar__segment--detail"

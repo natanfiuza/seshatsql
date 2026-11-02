@@ -12,7 +12,7 @@ beforeEach(() => {
 })
 
 describe('AppToolbar', () => {
-  it('keeps nine inert actions plus the connections entry and two working combos', async () => {
+  it('enables new query and connections while the other eight actions stay inert', async () => {
     const toolbar = mount(AppToolbar, {
       props: { theme: 'system', locale: 'en-US' },
       global: { plugins: [i18n] }
@@ -20,17 +20,19 @@ describe('AppToolbar', () => {
 
     const buttons = toolbar.findAll('.toolbar__button')
     expect(buttons).toHaveLength(10)
-    for (const button of buttons.slice(0, 9)) {
+    for (const button of buttons.slice(1, 9)) {
       expect(button.attributes('aria-disabled')).toBe('true')
       expect(button.attributes('title')).toContain('Not available in this preview.')
     }
-    expect(buttons[0]?.attributes('title')).toBe('New query — Not available in this preview.')
+    expect(buttons[0]?.attributes('title')).toBe('New query')
+    await buttons[0]?.trigger('click')
+    expect(toolbar.emitted('activate')?.[0]).toEqual(['new-query'])
 
     const connections = toolbar.get('[data-testid="connections-trigger"]')
     expect(connections.attributes('aria-disabled')).toBeUndefined()
     expect(connections.attributes('title')).toBe('Connections')
     await connections.trigger('click')
-    expect(toolbar.emitted('activate')?.[0]).toEqual(['open-connections'])
+    expect(toolbar.emitted('activate')?.[1]).toEqual(['open-connections'])
 
     await toolbar.get('[data-testid="theme-select"]').setValue('dark')
     expect(toolbar.emitted('update:theme')?.[0]).toEqual(['dark'])
@@ -44,7 +46,7 @@ describe('AppToolbar', () => {
 })
 
 describe('AppTabStrip', () => {
-  it('renders accessible tabs with inert add and close affordances', async () => {
+  it('renders accessible tabs and hides add/close unless enabled', async () => {
     const strip = mount(AppTabStrip, {
       props: {
         tabs: [
@@ -62,27 +64,49 @@ describe('AppTabStrip', () => {
     expect(tabs[0]?.attributes('aria-selected')).toBe('true')
     expect(tabs[0]?.attributes('tabindex')).toBe('0')
     expect(tabs[1]?.attributes('tabindex')).toBe('-1')
-
-    expect(strip.get('.tabstrip__add').attributes('aria-disabled')).toBe('true')
-    expect(strip.get('.tabstrip__add').attributes('title')).toBe(
-      'New tab — Not available in this preview.'
-    )
-    expect(strip.get('.tabstrip__close').attributes('aria-disabled')).toBe('true')
+    expect(strip.find('.tabstrip__add').exists()).toBe(false)
+    expect(strip.find('.tabstrip__close').exists()).toBe(false)
 
     await tabs[1]?.trigger('click')
     expect(strip.emitted('select')?.[0]).toEqual(['query-2'])
+  })
+
+  it('emits add and close when the strip is interactive', async () => {
+    const strip = mount(AppTabStrip, {
+      props: {
+        tabs: [
+          { id: 'query-1', label: 'Query 1' },
+          { id: 'connection:seshat-lab', label: 'Seshat Lab' }
+        ],
+        activeId: 'query-1',
+        label: 'Workspace tabs',
+        closable: true,
+        addable: true
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const add = strip.get('.tabstrip__add')
+    expect(add.attributes('title')).toBe('New query')
+    await add.trigger('click')
+    expect(strip.emitted('add')).toHaveLength(1)
+
+    const close = strip.findAll('.tabstrip__close')[1]
+    expect(close?.attributes('title')).toBe('Close Seshat Lab')
+    await close?.trigger('click')
+    expect(strip.emitted('close')?.[0]).toEqual(['connection:seshat-lab'])
   })
 })
 
 describe('AppStatusBar', () => {
   it('shows connection, detail and brand segments', () => {
     const status = mount(AppStatusBar, {
-      props: { detail: 'Rows: 4' },
+      props: { detail: 'Rows: 4', connectionName: 'Seshat Lab' },
       global: { plugins: [i18n] }
     })
 
     expect(status.get('[role="status"]').text()).toBe('Rows: 4')
-    expect(status.text()).toContain('Disconnected')
+    expect(status.text()).toContain('Connected (simulation) · Seshat Lab')
     expect(status.text()).toContain('Sample data · SeshatSQL')
   })
 })

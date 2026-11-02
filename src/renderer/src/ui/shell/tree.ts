@@ -3,9 +3,13 @@
  * match, flattening for keyboard navigation and id collection for the initial
  * expansion state.
  */
+export type TreeNodeKind = 'folder' | 'connection' | 'database' | 'table' | 'view' | 'event'
+
 export interface TreeSourceNode {
   readonly id: string
   readonly label: string
+  readonly nodeKind?: TreeNodeKind
+  readonly badge?: string
   readonly children?: readonly TreeSourceNode[]
 }
 
@@ -15,6 +19,8 @@ export interface TreeRow {
   readonly depth: number
   readonly hasChildren: boolean
   readonly expanded: boolean
+  readonly nodeKind?: TreeNodeKind
+  readonly badge?: string
 }
 
 function isNode(node: TreeSourceNode | null): node is TreeSourceNode {
@@ -57,7 +63,15 @@ export function flattenTree(
     for (const node of list) {
       const hasChildren = (node.children?.length ?? 0) > 0
       const isExpanded = hasChildren && (expandAll || expanded.has(node.id))
-      rows.push({ id: node.id, label: node.label, depth, hasChildren, expanded: isExpanded })
+      rows.push({
+        id: node.id,
+        label: node.label,
+        depth,
+        hasChildren,
+        expanded: isExpanded,
+        nodeKind: node.nodeKind,
+        badge: node.badge
+      })
       if (isExpanded) {
         walk(node.children ?? [], depth + 1)
       }

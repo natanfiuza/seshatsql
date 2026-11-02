@@ -33,7 +33,12 @@ const { t } = useI18n()
 
 const TOOL_GROUPS: ReadonlyArray<ReadonlyArray<ToolAction>> = [
   [
-    { icon: 'newQuery', labelKey: 'shell.toolbar.newQuery' },
+    {
+      icon: 'newQuery',
+      labelKey: 'shell.toolbar.newQuery',
+      action: 'new-query',
+      testId: 'new-query-trigger'
+    },
     { icon: 'open', labelKey: 'shell.toolbar.open' },
     { icon: 'save', labelKey: 'shell.toolbar.save' }
   ],

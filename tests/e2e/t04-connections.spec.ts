@@ -195,7 +195,9 @@ test('creates a profile from the Tools menu and restores it without connecting',
     const dialog = second.page.getByRole('dialog')
     await expect(dialog.locator('.connections__name')).toHaveText(['Chamados'])
     await expect(dialog.locator('#connection-name')).toHaveValue('Chamados')
-    await expect(second.page.locator('.statusbar')).toContainText('Disconnected')
+    await expect(second.page.locator('.statusbar')).toContainText(
+      'Connected (simulation) · Seshat Lab'
+    )
     await expect(second.page.locator('.sql-log')).toContainText('No queries executed.')
     await closeDialog(second.page)
   } finally {

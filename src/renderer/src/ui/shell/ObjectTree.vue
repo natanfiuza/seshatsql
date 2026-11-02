@@ -3,6 +3,7 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppIcon from './AppIcon.vue'
+import type { IconName } from './icons'
 import {
   collectIds,
   filterTree,
@@ -17,6 +18,8 @@ const props = defineProps<{
   label: string
   defaultExpanded?: readonly string[]
 }>()
+
+const emit = defineEmits<{ activate: [id: string] }>()
 
 const { t } = useI18n()
 
@@ -55,6 +58,37 @@ function toggle(row: TreeRow): void {
 function select(row: TreeRow): void {
   activeId.value = row.id
   selectedId.value = row.id
+}
+
+function isGroupRow(row: TreeRow): boolean {
+  return row.nodeKind === 'folder' || (row.nodeKind === undefined && row.hasChildren)
+}
+
+function activateRow(row: TreeRow): void {
+  select(row)
+  if (isGroupRow(row)) {
+    if (row.hasChildren) {
+      toggle(row)
+    }
+    return
+  }
+  emit('activate', row.id)
+}
+
+function iconFor(row: TreeRow): IconName {
+  switch (row.nodeKind) {
+    case 'connection':
+    case 'database':
+    case 'folder':
+      return 'database'
+    case 'event':
+      return 'history'
+    case 'table':
+    case 'view':
+      return 'grid'
+    default:
+      return row.hasChildren ? 'database' : 'grid'
+  }
 }
 
 function onFilterInput(event: Event): void {
@@ -128,7 +162,7 @@ function onRowKeydown(event: KeyboardEvent, row: TreeRow, index: number): void {
     case 'Enter':
     case ' ':
       event.preventDefault()
-      select(row)
+      activateRow(row)
       break
     default:
       break
@@ -181,7 +215,7 @@ function onRowKeydown(event: KeyboardEvent, row: TreeRow, index: number): void {
         :aria-selected="row.id === selectedId"
         :tabindex="row.id === rovingId ? 0 : -1"
         :style="{ paddingLeft: `${8 + row.depth * 12}px` }"
-        @click="select(row)"
+        @click="activateRow(row)"
         @focus="activeId = row.id"
         @keydown="onRowKeydown($event, row, index)"
       >
@@ -192,11 +226,15 @@ function onRowKeydown(event: KeyboardEvent, row: TreeRow, index: number): void {
           @click.stop="row.hasChildren && toggle(row)"
         >{{ row.hasChildren ? (row.expanded ? '−' : '+') : '' }}</span>
         <AppIcon
-          :name="row.hasChildren ? 'database' : 'grid'"
+          :name="iconFor(row)"
           :size="14"
           class="object-tree__icon"
         />
         <span class="object-tree__label">{{ row.label }}</span>
+        <span
+          v-if="row.badge !== undefined"
+          class="object-tree__badge"
+        >{{ row.badge }}</span>
       </div>
 
       <p
@@ -324,8 +362,22 @@ function onRowKeydown(event: KeyboardEvent, row: TreeRow, index: number): void {
 }
 
 .object-tree__label {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.object-tree__badge {
+  flex: none;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 12px;
+  letter-spacing: 0.02em;
 }
 
 .object-tree__empty {

@@ -78,13 +78,19 @@ export type Messages = {
       sampleRoot: string
       tables: string
       views: string
+      events: string
+      activeBadge: string
       empty: string
       noMatches: string
     }
     tabs: {
       queryOne: string
+      queryNumber: string
       resultOne: string
       addTab: string
+      close: string
+      newQuery: string
+      workspaceLabel: string
     }
     editor: {
       label: string
@@ -105,6 +111,7 @@ export type Messages = {
     }
     status: {
       disconnected: string
+      simulated: string
       rows: string
       sample: string
     }
@@ -116,6 +123,167 @@ export type Messages = {
       tree: string
       editor: string
       log: string
+    }
+    workspace: {
+      demoNotice: string
+      notAvailable: string
+      openData: string
+      sectionsLabel: string
+      units: {
+        byte: string
+        kilobyte: string
+        megabyte: string
+        gigabyte: string
+        terabyte: string
+      }
+      values: {
+        yes: string
+        no: string
+        global: string
+        session: string
+        none: string
+        never: string
+        definer: string
+        enabled: string
+        recurring: string
+        preserve: string
+      }
+      objectTypes: {
+        table: string
+        view: string
+        event: string
+      }
+      connection: {
+        title: string
+        databases: string
+        variables: string
+        status: string
+        processes: string
+        commandStats: string
+        databasesGrid: {
+          name: string
+          tables: string
+          views: string
+          size: string
+          collation: string
+        }
+        variablesGrid: {
+          variable: string
+          value: string
+          scope: string
+        }
+        statusGrid: {
+          variable: string
+          value: string
+        }
+        processesGrid: {
+          id: string
+          user: string
+          host: string
+          database: string
+          command: string
+          time: string
+          state: string
+          info: string
+        }
+        commandStatsGrid: {
+          command: string
+          total: string
+          perHour: string
+          perSecond: string
+        }
+      }
+      database: {
+        title: string
+        columns: {
+          name: string
+          rows: string
+          size: string
+          createdAt: string
+          updatedAt: string
+          engine: string
+          comment: string
+          type: string
+        }
+        empty: string
+      }
+      object: {
+        tableTitle: string
+        viewTitle: string
+        eventTitle: string
+        dataTitle: string
+        createCodeLabel: string
+        alterCodeLabel: string
+        subTabs: {
+          basic: string
+          options: string
+          indexes: string
+          foreignKeys: string
+          checks: string
+          partitions: string
+          createSql: string
+          alterSql: string
+        }
+        fields: {
+          name: string
+          database: string
+          engine: string
+          collation: string
+          charset: string
+          rows: string
+          size: string
+          createdAt: string
+          updatedAt: string
+          comment: string
+          rowFormat: string
+          autoIncrement: string
+          compression: string
+          tablespace: string
+          encryption: string
+          definer: string
+          security: string
+          checkOption: string
+          algorithm: string
+          updatable: string
+          status: string
+          type: string
+          schedule: string
+          starts: string
+          ends: string
+          onCompletion: string
+          lastExecuted: string
+        }
+        indexes: {
+          name: string
+          columns: string
+          unique: string
+          type: string
+        }
+        foreignKeys: {
+          name: string
+          column: string
+          referencedTable: string
+          referencedColumn: string
+          onUpdate: string
+          onDelete: string
+        }
+        checks: {
+          name: string
+          expression: string
+          enforced: string
+        }
+        partitions: {
+          name: string
+          method: string
+          expression: string
+          rows: string
+          size: string
+        }
+        emptyGrid: string
+      }
+      data: {
+        gridLabel: string
+      }
     }
   }
   persistence: {
