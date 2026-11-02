@@ -4,7 +4,7 @@
  */
 
 /** Shell actions that have an implementation behind an enabled menu or toolbar entry. */
-export type ShellAction = 'open-connections'
+export type ShellAction = 'open-connections' | 'new-query'
 
 export interface MenuItemDefinition {
   id: string

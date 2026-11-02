@@ -242,7 +242,7 @@ describe('S05Lab', () => {
     expect(wrapper.text()).toContain('Arquivo')
     expect(wrapper.text()).toContain('Tabelas (3)')
     expect(wrapper.text()).toContain('Consulta 1')
-    expect(wrapper.text()).toContain('Desconectado')
+    expect(wrapper.text()).toContain('Conectado (simulação) · Seshat Lab')
     expect(wrapper.get('[data-testid="monaco-stub"]').attributes('data-locale')).toBe('pt-BR')
   })
 
@@ -490,7 +490,7 @@ describe('S05Lab', () => {
     expect(document.querySelector('.dialog__panel')).toBeNull()
     expect(document.activeElement).toBe(trigger)
     expect(wrapper.get('[role="status"]').text()).toBe('Rows: 4')
-    expect(wrapper.text()).toContain('Disconnected')
+    expect(wrapper.text()).toContain('Connected (simulation) · Seshat Lab')
   })
 
   it('opens the connections dialog from the Tools menu', async () => {
@@ -514,14 +514,16 @@ describe('S05Lab', () => {
 
     expect(document.querySelector('.dialog__panel')).toBeNull()
     expect(document.activeElement).toBe(wrapper.get('[data-testid="connections-trigger"]').element)
-    expect(wrapper.text()).toContain('Disconnected')
+    expect(wrapper.text()).toContain('Connected (simulation) · Seshat Lab')
   })
 
   it('expands a collapsed folder and filters the tree locally', async () => {
     const wrapper = mountLab()
 
+    expect(wrapper.text()).toContain('v_customer_totals')
+    await wrapper.get('[data-node-id="folder:seshat_lab:views"] .object-tree__box').trigger('click')
     expect(wrapper.text()).not.toContain('v_customer_totals')
-    await wrapper.get('[data-node-id="views"] .object-tree__box').trigger('click')
+    await wrapper.get('[data-node-id="folder:seshat_lab:views"] .object-tree__box').trigger('click')
     expect(wrapper.text()).toContain('v_customer_totals')
 
     await wrapper.get('.object-tree__filter').setValue('custom')
@@ -531,5 +533,87 @@ describe('S05Lab', () => {
 
     await wrapper.get('.object-tree__filter').setValue('missing')
     expect(wrapper.text()).toContain('No matching objects')
+  })
+
+  it('opens ephemeral workspace tabs from the tree without persisting them', async () => {
+    vi.useFakeTimers()
+    try {
+      const wrapper = mountLab(startupState({ tabs: tabsState([sampleTab()]) }))
+      await flushPromises()
+
+      await wrapper.get('[data-node-id="connection:seshat-lab"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('.connection-view').exists()).toBe(true)
+      expect(wrapper.text()).toContain('Databases (3)')
+      vi.advanceTimersByTime(500)
+      await flushPromises()
+      expect(apiState.tabsSaves).toHaveLength(0)
+
+      const activeTab = wrapper
+        .findAll('[role="tab"]')
+        .find((tab) => tab.attributes('aria-selected') === 'true')
+      expect(activeTab?.text()).toBe('Seshat Lab')
+
+      await wrapper.get('[data-node-id="database:analytics"]').trigger('click')
+      await flushPromises()
+      expect(wrapper.find('.database-view').exists()).toBe(true)
+      expect(wrapper.text()).toContain('Database: analytics')
+
+      await wrapper.get('.tabstrip__tab--active .tabstrip__close').trigger('click')
+      await flushPromises()
+      expect(wrapper.find('.database-view').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="monaco-stub"]').exists()).toBe(true)
+      expect(apiState.tabsSaves).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('creates and closes query tabs through the global strip', async () => {
+    vi.useFakeTimers()
+    try {
+      const wrapper = mountLab(startupState({ tabs: tabsState([sampleTab()]) }))
+      await flushPromises()
+      expect(apiState.tabsSaves).toHaveLength(0)
+
+      await wrapper.get('.tabstrip__add').trigger('click')
+      vi.advanceTimersByTime(500)
+      await flushPromises()
+
+      const created = apiState.tabsSaves.at(-1) as {
+        tabs: Array<{ id: string; title: string; text: string }>
+        activeTabId: string
+      }
+      expect(created.tabs.map((tab) => tab.id)).toEqual(['query-1', 'query-2'])
+      expect(created.tabs[1]?.title).toBe('Query 2')
+      expect(created.tabs[1]?.text).toBe('')
+      expect(created.activeTabId).toBe('query-2')
+
+      await wrapper.findAll('.tabstrip__close')[1]?.trigger('click')
+      await flushPromises()
+
+      let saved = apiState.tabsSaves.at(-1) as {
+        tabs: Array<{ id: string; title?: string; text?: string }>
+        activeTabId: string
+      }
+      expect(saved.tabs.map((tab) => tab.id)).toEqual(['query-1'])
+      expect(saved.activeTabId).toBe('query-1')
+
+      await wrapper.get('.tabstrip__close').trigger('click')
+      await flushPromises()
+
+      saved = apiState.tabsSaves.at(-1) as {
+        tabs: Array<{ id: string; title: string; text: string }>
+        activeTabId: string
+      }
+      expect(saved.tabs).toHaveLength(1)
+      expect(saved.tabs[0]?.id).toBe('query-1')
+      expect(saved.tabs[0]?.title).toBe('Query 1')
+      expect(saved.tabs[0]?.text).toBe('')
+      expect(saved.activeTabId).toBe('query-1')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

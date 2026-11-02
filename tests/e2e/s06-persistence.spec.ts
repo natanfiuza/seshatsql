@@ -144,7 +144,9 @@ test('restart restores theme, language and editor text without connecting', asyn
       '-- persisted_marker'
     )
     // Restoring a tab must not open a connection or execute SQL.
-    await expect(second.page.locator('.statusbar')).toContainText('Desconectado')
+    await expect(second.page.locator('.statusbar')).toContainText(
+      'Conectado (simulação) · Seshat Lab'
+    )
     await expect(second.page.locator('.sql-log')).toContainText('Nenhuma consulta executada.')
     await expect(second.page.locator('.notice')).toHaveCount(0)
   } finally {

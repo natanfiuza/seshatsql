@@ -5,17 +5,10 @@ import type { PersistedCursor, PersistedSelection } from '../../../../domain/per
 import MonacoEditor from '../../editor/MonacoEditor.vue'
 import type { SupportedLocale } from '../../i18n'
 import type { ResolvedTheme } from '../../theme/theme'
-import AppTabStrip from '../shell/AppTabStrip.vue'
 import LabHelpersPanel from './LabHelpersPanel.vue'
 
-interface EditorTab {
-  readonly id: string
-  readonly label: string
-}
-
 defineProps<{
-  tabs: readonly EditorTab[]
-  activeId: string
+  tabId: string
   sql: string
   theme: ResolvedTheme
   locale: SupportedLocale
@@ -25,7 +18,6 @@ defineProps<{
 
 const emit = defineEmits<{
   change: [value: string]
-  select: [id: string]
   view: [cursor: PersistedCursor, selection: PersistedSelection | null]
 }>()
 
@@ -37,18 +29,11 @@ const { t } = useI18n()
     class="editor-pane"
     :aria-label="t('shell.editor.label')"
   >
-    <AppTabStrip
-      :tabs="tabs"
-      :active-id="activeId"
-      :label="t('shell.editor.label')"
-      @select="emit('select', $event)"
-    />
-
     <div class="editor-pane__body">
       <MonacoEditor
-        :key="activeId"
+        :key="tabId"
         class="editor-pane__editor"
-        :model-id="activeId"
+        :model-id="tabId"
         :value="sql"
         :theme="theme"
         :locale="locale"

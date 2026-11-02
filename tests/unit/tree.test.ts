@@ -97,4 +97,34 @@ describe('tree flattening', () => {
     expect(parentIdOf(rows, 2)).toBe('tables')
     expect(parentIdOf(rows, 4)).toBe('root')
   })
+
+  it('preserves node kinds and badges through flattening and filtering', () => {
+    const typed: readonly TreeSourceNode[] = [
+      {
+        id: 'connection',
+        label: 'Seshat Lab',
+        nodeKind: 'connection',
+        badge: 'Active',
+        children: [
+          {
+            id: 'tables',
+            label: 'Tables',
+            nodeKind: 'folder',
+            children: [{ id: 'customers', label: 'customers', nodeKind: 'table' }]
+          }
+        ]
+      }
+    ]
+
+    const rows = flattenTree(typed, new Set(['connection', 'tables']))
+    expect(rows.map((row) => [row.id, row.nodeKind, row.badge])).toEqual([
+      ['connection', 'connection', 'Active'],
+      ['tables', 'folder', undefined],
+      ['customers', 'table', undefined]
+    ])
+
+    const filtered = filterTree(typed, 'cust')
+    expect(filtered[0]?.badge).toBe('Active')
+    expect(filtered[0]?.children?.[0]?.children?.[0]?.nodeKind).toBe('table')
+  })
 })

@@ -15,8 +15,11 @@ const props = withDefaults(
     locale: SupportedLocale
     cursor?: PersistedCursor | null
     selection?: PersistedSelection | null
+    readOnly?: boolean
+    ariaLabel?: string
+    testId?: string
   }>(),
-  { cursor: null, selection: null }
+  { cursor: null, selection: null, readOnly: false, ariaLabel: '', testId: 'monaco-editor' }
 )
 
 const emit = defineEmits<{
@@ -57,7 +60,10 @@ onMounted(async () => {
     editor = loaded.editor.create(host.value, {
       model,
       theme: monacoTheme(props.theme),
-      ariaLabel: t('shell.editor.label'),
+      ariaLabel:
+        props.ariaLabel === '' ? t('shell.editor.label') : props.ariaLabel,
+      readOnly: props.readOnly,
+      domReadOnly: props.readOnly,
       automaticLayout: true,
       fontFamily: "'Consolas', 'Courier New', monospace",
       fontSize: 12,
@@ -75,7 +81,7 @@ onMounted(async () => {
     })
 
     model.onDidChangeContent(() => {
-      if (model !== null) {
+      if (model !== null && !props.readOnly) {
         emit('change', model.getValue())
       }
     })
@@ -137,6 +143,13 @@ watch(
   }
 )
 
+watch(
+  () => props.readOnly,
+  (readOnly) => {
+    editor?.updateOptions({ readOnly, domReadOnly: readOnly })
+  }
+)
+
 onBeforeUnmount(() => {
   disposed = true
   editor?.dispose()
@@ -170,7 +183,7 @@ defineExpose({ getViewState, setViewState, getValue, focus })
 <template>
   <div
     class="monaco-editor"
-    data-testid="monaco-editor"
+    :data-testid="testId"
     :data-language="modelLanguage"
     :data-model-uri="modelUri"
   >
