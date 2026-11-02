@@ -107,7 +107,8 @@ Substituir a árvore fixa de tabelas/campos do protótipo S05 por **Conexão ati
 ## Pendências
 
 - Revisão do protótipo e do diff.
-- Revisão do ADR 0017 e auditoria de contraste da paleta do T04.
+- Aceite humano do ADR 0017: a revisão técnica de 2026-11-02 não encontrou divergências.
+- Auditoria de contraste da paleta concluída em `docs/spikes/20261102_t04-palette-contrast-evidence.md`, sem falha bloqueante; o anel de alto contraste é melhoria opcional.
 - Decisão sobre artefatos `.gitpr` não rastreados.
 - T05/T06/T07/T10 não autorizados.
 

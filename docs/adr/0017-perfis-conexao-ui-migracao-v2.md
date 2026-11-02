@@ -2,6 +2,8 @@
 
 Status: **proposto**. Sustentado por execução real em `docs/spikes/20261031_t04-connections-evidence.md` (215 testes unitários/componente, 27 e2e, DPAPI real, reinício, pacote `win-unpacked`). As decisões foram aprovadas antes da implementação em `docs/plans/develop_natan/20261031_t04_profiles_preferences_dpapi_plansfacts.md` (D-T04-01..12). Não substitui a revisão humana nem altera ADR 0016.
 
+Revisão técnica de 2026-11-02: decisões conferidas contra o código, os testes e a evidência; nenhuma divergência encontrada. A auditoria de contraste da paleta está em `docs/spikes/20261102_t04-palette-contrast-evidence.md`: não há falha bloqueante de WCAG porque a cor é redundante com o rótulo textual; a recomendação de anel de alto contraste é opcional e não foi aplicada. O status permanece **proposto** até o aceite humano explícito.
+
 ## Contexto
 O S06 entregou persistência real de `connections.yml`, cifragem DPAPI e recuperação, mas sem UI de perfis e com schemaVersion 1 de formato livre para ambiente e cor. O T04 precisa fechar o critério “salvar/reabrir sem senha clara; perfis com cor/ambiente” (R03, R04, R18, R19, A02, A12) **sem** conectar/testar (T05), sem alterar abas/editor (T07), sem Preferências completas (T11) e sem instalador (T13). O desafio é acrescentar um contrato mais forte sem perder os arquivos existentes e sem expor segredos ao renderer.
 

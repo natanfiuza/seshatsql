@@ -16,7 +16,7 @@ Este arquivo existe para continuar o trabalho sem depender da conversa anterior.
 | HEAD da feature | `4556f3c` (nenhum commit do agente; alterações ainda não commitadas) |
 | Commit/PR | Pendentes; o usuário executa com `gitpr` |
 | T04 | Implementado, verificado e commitado em `4556f3c` |
-| ADR 0017 | **Proposto** — aguarda revisão humana |
+| ADR 0017 | **Proposto** — revisão técnica concluída em 2026-11-02; aguarda aceite humano |
 | Protótipo do workspace explorer | Implementado e verificado; aguarda revisão |
 | T05/T06/T07/T10 | **Não iniciados e não autorizados** |
 
@@ -82,9 +82,9 @@ Relatório: `docs/claude-code/reports/feat/workspace-explorer-prototype/20261102
 ### 5.2 Revisão do T04
 
 1. Revisar o diff do commit `4556f3c`.
-2. Revisar o **ADR 0017** (`docs/adr/0017-perfis-conexao-ui-migracao-v2.md`), ainda proposto.
+2. Confirmar o **ADR 0017** (`docs/adr/0017-perfis-conexao-ui-migracao-v2.md`): a revisão técnica de 2026-11-02 não encontrou divergências; o status só muda para aceito com decisão humana explícita.
 3. Confirmar a política de rascunho e os avisos de migração no banner do shell.
-4. A paleta ainda não teve auditoria formal de contraste WCAG.
+4. A auditoria de contraste da paleta foi concluída em `docs/spikes/20261102_t04-palette-contrast-evidence.md`: sem falha bloqueante de WCAG porque a cor é redundante com o rótulo; o anel de alto contraste é melhoria visual opcional, não aplicada.
 
 ### 5.3 Próxima etapa possível: T05 — conectar/desconectar e sessão compartilhada
 
